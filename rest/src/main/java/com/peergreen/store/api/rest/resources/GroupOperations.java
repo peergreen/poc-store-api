@@ -302,7 +302,7 @@ public class GroupOperations {
     @GET
     public Response getGroups(@Context UriInfo uri){
         JSONObject jsonObject = new JSONObject(); 
-        String path = uri.getBaseUri().toString();
+        String path = uri.getAbsolutePath().toString();
 
         Collection<Group> groups = storeManagement.collectGroups();
         
@@ -313,7 +313,7 @@ public class GroupOperations {
         {
             group = gIterator.next();
             try {
-                jsonObject.put(group.getGroupname(), path.concat(group.getGroupname()));
+                jsonObject.put(group.getGroupname(), path.concat("/"+ group.getGroupname()));
             } catch (JSONException e) {
                 theLogger.log(Level.SEVERE,e.getMessage());
                 return null;
