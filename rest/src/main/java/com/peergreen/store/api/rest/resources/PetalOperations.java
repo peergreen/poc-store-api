@@ -136,7 +136,7 @@ public class PetalOperations {
             Set<Capability> capabilities, File petalBinary){
         
         try {
-            return storeManagement.submitPetal(vendorName, artifactId, version, description, category, requirements, capabilities, petalBinary);
+            return storeManagement.submitPetal(vendorName, artifactId, version, description, category.getCategoryName(), requirements, capabilities, petalBinary);
         } catch (EntityAlreadyExistsException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
