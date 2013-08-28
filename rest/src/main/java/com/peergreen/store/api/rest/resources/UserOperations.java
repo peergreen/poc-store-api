@@ -58,8 +58,25 @@ public class UserOperations {
      * @return A collection of all the user existing 
      */
     @GET
-    public Collection<User> getUsers(){
-        return storeManagment.collectUsers();
+    public Response getUsers(@Context UriInfo uri){
+        String path = uri.getBaseUri().toString();
+        JSONObject usersJson = new JSONObject();
+        Collection<User> users = storeManagment.collectUsers();
+        Iterator<User> iteratorUser = users.iterator();
+        User u ; 
+        while(iteratorUser.hasNext())
+        {
+            u = iteratorUser.next();
+            if(u.getPseudo() != "Administrator"){
+                try {
+                    usersJson.put(u.getPseudo(), path.concat("user/"+u.getPseudo()));
+                } catch (JSONException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+        }
+        return Response.status(200).entity(usersJson.toString()).build();   
     }
 
     /**
@@ -104,6 +121,7 @@ public class UserOperations {
             userInfo.put("email",email);
             userController.addUser(pseudo, password, email);
             return Response.status(201).entity(uri.getBaseUri().toString().concat("/"+pseudo)).build(); 
+
         } catch (JSONException e) {
             theLogger.log(Level.SEVERE,e.getMessage());
             return null;
