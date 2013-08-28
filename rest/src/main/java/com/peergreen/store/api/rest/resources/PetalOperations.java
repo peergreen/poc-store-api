@@ -8,8 +8,14 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
+import javax.ws.rs.core.UriInfo;
 
+import com.peergreen.store.controller.IPetalController;
 import com.peergreen.store.controller.IStoreManagment;
 import com.peergreen.store.db.client.ejb.entity.Capability;
 import com.peergreen.store.db.client.ejb.entity.Category;
@@ -18,34 +24,58 @@ import com.peergreen.store.db.client.ejb.entity.Requirement;
 import com.peergreen.store.db.client.exception.EntityAlreadyExistsException;
 import com.peergreen.store.db.client.exception.NoEntityFoundException;
 
+
 @Path(value = "/petal")
 public class PetalOperations {
 
-    //TODO Identify if an id is useless for the petal
-    private IStoreManagment storeManagement;    
+    private IStoreManagment storeManagement;
+    private IPetalController petalController;
 
-//    private static Logger theLogger =
-//            Logger.getLogger(GroupOperations.class.getName());
-    
     /**
      * @param storeManagement the storeManagement to set
      */
     public void setStoreManagement(IStoreManagment storeManagement) {
         this.storeManagement = storeManagement;
     }
+    
+    /**
+     * @param storeManagement the storeManagement to set
+     */
+    public void setPetalController(IPetalController petalController) {
+        this.storeManagement = storeManagement;
+    }
 
     /**
-     * To retrieve a petal from the sore
+     * Method to retrieve a petal from the local store.
      * 
+     * @return {@link Response} response containing URL to the petal
      */
-    
     @GET
-    @Path("/id")
-    public Response getPetalFromStore(){
-        
-        return null; 
-        
+    @Path("/local/{vendor}/{artifactId}/{version}")
+    public Response getPetalFromLocal(@Context UriInfo uri,
+    		@PathParam(value = "vendor") String vendor,
+    		@PathParam(value = "artifactId") String artifactId,
+    		@PathParam(value = "version") String version) throws Exception {
+    	// retrieve petal with this id
+//    	storeManagement.
+//    	
+//    	if (/* want the pdf file */) {
+//	        return Response.ok(new File(/*...*/)).type("application/pdf").build(); 
+//	    }
+//
+//    	    /* default to xml file */
+//    	    return Response.ok(new FileInputStream("custom.xml")).type("application/xml").build();
+//    	}
+//    	
+//    	Response rep = Response.status()
+//    	Response.status(200).entity(jsonObject.toString()).build();
+    	
+    	File petal = storeManagement.getPetalFromLocal(vendor, artifactId, version);
+    	ResponseBuilder response = Response.ok(petal);
+        response.header("Content-Disposition", "attachment; filename="+artifactId+"."+version+".jar");
+        return response.build();
     }
+    
     /**
      * Retrieve all the petals existing 
      * @return A collection of petals existing 
@@ -135,6 +165,4 @@ public class PetalOperations {
         }
         return null;
     }
-    
-    
 }

@@ -94,6 +94,7 @@ public class WebService extends Application {
         groupOp.setStoreManagement(storeManagment);
         linkOp.setStoreManagement(storeManagment);
         petalOp.setStoreManagement(storeManagment);
+        petalOp.setPetalController(petalController);
         vendorOp.setPetalController(petalController);
 
         userOp.setStoreManagment(storeManagment);
