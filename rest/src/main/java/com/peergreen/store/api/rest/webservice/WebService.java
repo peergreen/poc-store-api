@@ -13,6 +13,7 @@ import org.apache.felix.ipojo.annotations.StaticServiceProperty;
 
 import com.peergreen.store.api.rest.resources.CapabilityOperations;
 import com.peergreen.store.api.rest.resources.CategoryOperations;
+import com.peergreen.store.api.rest.resources.GetOperations;
 import com.peergreen.store.api.rest.resources.GroupOperations;
 import com.peergreen.store.api.rest.resources.LinkOperations;
 import com.peergreen.store.api.rest.resources.PetalOperations;
@@ -78,6 +79,7 @@ public class WebService extends Application {
         RequirementOperations reqOp = new RequirementOperations();
         UserOperations userOp = new UserOperations();
         VendorOperations vendorOp = new VendorOperations();
+        GetOperations getOp = new GetOperations();
 
         s.add(capOp);
         s.add(catOp);
@@ -86,19 +88,21 @@ public class WebService extends Application {
         s.add(petalOp);
         s.add(reqOp);
         s.add(vendorOp);
-
+        s.add(getOp);
         s.add(userOp);
 
         catOp.setStoreManagement(storeManagment);
         groupOp.setGroupController(groupController);
-        groupOp.setStoreManagement(storeManagment);
         linkOp.setStoreManagement(storeManagment);
         petalOp.setStoreManagement(storeManagment);
         petalOp.setPetalController(petalController);
-        vendorOp.setPetalController(petalController);
-
-        userOp.setStoreManagment(storeManagment);
+        getOp.setStoreManagment(storeManagment);
+        getOp.setPetalController(petalController);
         userOp.setUserController(userController);
+        vendorOp.setPetalController(petalController);
+        vendorOp.setStoreManagment(storeManagment);
+        reqOp.setPetalController(petalController);
+        capOp.setPetalController(petalController);
         return s;
     }
 }
