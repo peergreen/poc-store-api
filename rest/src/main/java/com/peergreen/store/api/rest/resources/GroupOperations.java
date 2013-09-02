@@ -14,13 +14,12 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.Response.Status;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.peergreen.store.controller.IGroupController;
-import com.peergreen.store.controller.IStoreManagment;
-import com.peergreen.store.db.client.ejb.entity.Group;
 import com.peergreen.store.db.client.ejb.entity.Petal;
 import com.peergreen.store.db.client.ejb.entity.User;
 import com.peergreen.store.db.client.exception.EntityAlreadyExistsException;
@@ -44,7 +43,8 @@ public class GroupOperations {
 
     @GET
     @Path("{name}")
-    public Response getGroup(@Context UriInfo uri, @PathParam(value = "name") String name){
+    public Response getGroup(@Context UriInfo uri,
+            @PathParam(value = "name") String name) throws JSONException {
 
         JSONObject jsonObject = new JSONObject();
         String path = uri.getBaseUri().toString();
@@ -52,63 +52,62 @@ public class GroupOperations {
         JSONObject usersJson = new JSONObject();
         Collection<User> users;
         JSONObject petalsJson = new JSONObject();
-        Collection<Petal> petals ;
+        Collection<Petal> petals;
         try {
             users = groupController.collectUsers(name);
             Iterator<User> iteratorUser = users.iterator();
-            User u ; 
-            while(iteratorUser.hasNext())
-            {
+            User u; 
+            while (iteratorUser.hasNext()) {
                 u = iteratorUser.next();
-                usersJson.put(u.getPseudo(), path.concat("user/"+u.getPseudo()));
+                usersJson.
+                put(u.getPseudo(), path.concat("user/" + u.getPseudo()));
             }
 
 
             petals = groupController.collectPetals(name);
             Iterator<Petal> pIterator = petals.iterator();
-            Petal p; 
-            while(pIterator.hasNext())
-            {
+            Petal p;
+            while (pIterator.hasNext()) {
                 p = pIterator.next();
-                petalsJson.put(p.getArtifactId(), path.concat("petal/"+p.getArtifactId()));
+                petalsJson.put(p.getArtifactId(), path.concat("petal/"
+                        + p.getVendor() + "/" + p.getArtifactId()
+                        + "/" + p.getVersion()));
             }
 
             jsonObject.put("users", usersJson.toString());
             jsonObject.put("petals", petalsJson.toString());
-            return Response.status(200).entity(jsonObject.toString()).build();   
+            return Response.status(200).entity(jsonObject.get("users").
+                    toString() + '\n'
+                    + jsonObject.get("petals").toString()).build();
         } catch (NoEntityFoundException e) {
-            theLogger.log(Level.SEVERE,e.getMessage());
-            return null;
-        } catch (JSONException e) {
-            theLogger.log(Level.SEVERE,e.getMessage());
-            return null;
+            theLogger.log(Level.SEVERE, e.getMessage());
+            return Response.status(404).
+                    entity("Group " + name + " doesn't exist.").build();
         }
     }
-
 
 
     /**
      * Create a group of users  
      * @param name the name of the group to create
      * @return the group created
+     * @throws JSONException 
      */
     @POST
-    public Response addGroup(String payload){   
+    public Response createGroup(String payload) throws JSONException {   
 
         JSONObject jsonObject = null;
-        String name = null; 
+        String name = null;
         try {
             jsonObject = new JSONObject(payload);
             name = jsonObject.getString("name");
             groupController.createGroup(name);
-            return Response.status(201).entity("The group " + name + " was created successfully").build();
-        } catch (JSONException e) {
-            theLogger.log(Level.SEVERE,e.getMessage());
-            return null;
+            return Response.status(201).entity("The group " 
+                    + name + " was created successfully").build();
         } catch (EntityAlreadyExistsException e) {
-            theLogger.log(Level.SEVERE,e.getMessage());
-            return null;
-        } 
+            theLogger.log(Level.SEVERE, e.getMessage());
+            return Response.status(Status.CONFLICT).build();
+        }
     }
 
     /**
@@ -117,9 +116,14 @@ public class GroupOperations {
      */
     @DELETE
     @Path("{name}")
-    public Response deleteGroup(@PathParam("name") String name){  
-        groupController.deleteGroup(name);  
-        return Response.status(201).entity("The group " + name + " was deleted successfully").build();
+    public Response deleteGroup(@PathParam("name") String name) {
+        if (groupController.deleteGroup(name)!= null) {
+            return Response.status(200).entity("The group " + name
+                    + " was deleted successfully").build();
+        } else {
+            return Response.status(404).
+                    entity("Group " + name + " doesn't exist.").build();
+        }
     }
 
     /**
@@ -130,46 +134,22 @@ public class GroupOperations {
      */
     @PUT
     @Path("{name}/user/{pseudo}")
-    public Response addUser(@Context UriInfo uri,@PathParam("name") String groupName, @PathParam("pseudo") String pseudo){
+    public Response addUser(@Context UriInfo uri,
+            @PathParam("name") String groupName,
+            @PathParam("pseudo") String pseudo) {
 
-        JSONObject jsonObject = new JSONObject();
         String path = uri.getBaseUri().toString();
 
-        JSONObject usersJson = new JSONObject();
-        JSONObject petalsJson = new JSONObject();
-
-        Collection<User> users;
-        Collection<Petal> petals ;
         try {
             groupController.addUser(groupName, pseudo);
-            users = groupController.collectUsers(groupName);
-            Iterator<User> iteratorUser = users.iterator();
-            User u ; 
-            while(iteratorUser.hasNext())
-            {
-                u = iteratorUser.next();
-                usersJson.put(u.getPseudo(), path.concat("user/"+u.getPseudo()));
-            }
-
-            petals = groupController.collectPetals(groupName);
-            Iterator<Petal> pIterator = petals.iterator();
-            Petal p; 
-            while(pIterator.hasNext())
-            {
-                p = pIterator.next();
-                petalsJson.put(p.getArtifactId(), path.concat("petal/"+p.getArtifactId()));
-            }
-
-            jsonObject.put("users", usersJson.toString());
-            jsonObject.put("petals", petalsJson.toString());
-            return Response.status(200).entity(jsonObject.toString()).build();   
-        } catch (NoEntityFoundException e) {
-            theLogger.log(Level.SEVERE,e.getMessage());
-            return null;
-        } catch (JSONException e) {
-            theLogger.log(Level.SEVERE,e.getMessage());
-            return null;
+            return Response.status(200).
+                    entity("We have a new user in the group "
+                            + path.concat(groupName)).build();
+        } catch (NoEntityFoundException e1) {
+            return Response.status(404).
+                    entity("Group " + groupName + " doesn't exist.").build();
         }
+
     }
 
     /**
@@ -180,49 +160,19 @@ public class GroupOperations {
      */
     @DELETE
     @Path("{name}/user/{pseudo}")
-    public Response removeUser(@Context UriInfo uri, @PathParam("group-name") String groupName, @PathParam("pseudo") String pseudo){
+    public Response removeUser(@Context UriInfo uri,
+            @PathParam("name") String groupName,
+            @PathParam("pseudo") String pseudo) {
 
-        JSONObject jsonObject = new JSONObject();
         String path = uri.getBaseUri().toString();
 
-        JSONObject usersJson = new JSONObject();
-        JSONObject petalsJson = new JSONObject();
-
-        Collection<User> users;
-        Collection<Petal> petals ;
         try {
             groupController.removeUser(groupName, pseudo);
-
-            users = groupController.collectUsers(groupName);
-            Iterator<User> iteratorUser = users.iterator();
-            User u ; 
-            while(iteratorUser.hasNext())
-            {
-                u = iteratorUser.next();
-                usersJson.put(u.getPseudo(), path.concat("user/"+u.getPseudo()));
-            }
-
-
-            petals = groupController.collectPetals(groupName);
-            Iterator<Petal> pIterator = petals.iterator();
-            Petal p; 
-            while(pIterator.hasNext())
-            {
-                p = pIterator.next();
-                petalsJson.put(p.getArtifactId(), path.concat("petal/"+p.getArtifactId()));
-            }
-
-
-            jsonObject.put("users", usersJson.toString());
-            jsonObject.put("petals", petalsJson.toString());
-
-            return Response.status(200).entity(jsonObject.toString()).build();   
-        } catch (NoEntityFoundException e) {
-            theLogger.log(Level.SEVERE,e.getMessage());
-            return null;
-        } catch (JSONException e) {
-            theLogger.log(Level.SEVERE,e.getMessage());
-            return null;
+            return Response.status(200).entity("A user is less in the group " 
+                    + path + "/" + groupName).build();
+        } catch (NoEntityFoundException e1) {
+            return Response.status(404).entity("Group "
+                    + groupName + " doesn't exist.").build();
         }
     }
 
@@ -230,10 +180,12 @@ public class GroupOperations {
      * Retrieve all the user of a group 
      * @param groupName the name of group to which collect its users 
      * @return A collection of users belongs to a group 
+     * @throws JSONException 
      */
     @GET
     @Path("{name}/users")
-    public Response collectUsersofGroup(@Context UriInfo uri, @PathParam("group-name") String groupName){       
+    public Response collectUsersofGroup(@Context UriInfo uri, 
+            @PathParam("name") String groupName) throws JSONException {       
         JSONObject jsonObject = new JSONObject();
         String path = uri.getBaseUri().toString();
 
@@ -242,26 +194,25 @@ public class GroupOperations {
 
             users = groupController.collectUsers(groupName);
             Iterator<User> iteratorUser = users.iterator();
-            User u ; 
-            while(iteratorUser.hasNext())
-            {
+            User u; 
+            while (iteratorUser.hasNext()) {
                 u = iteratorUser.next();
-                jsonObject.put(u.getPseudo(), path.concat("user/"+u.getPseudo()));
+                jsonObject.put(u.getPseudo(),
+                        path.concat("user/" + u.getPseudo()));
             }
-
-            return Response.status(200).entity(jsonObject.toString()).build();   
+            return Response.status(200).entity("Users of group "
+                    + groupName + " : " + jsonObject.toString()).build();
         } catch (NoEntityFoundException e) {
-            theLogger.log(Level.SEVERE,e.getMessage());
-            return null;
-        } catch (JSONException e) {
-            theLogger.log(Level.SEVERE,e.getMessage());
-            return null;
+            theLogger.log(Level.SEVERE, e.getMessage());
+            return Response.status(404).
+                    entity("Group " + groupName + " doesn't exist.").build();
         }
     }
 
     @GET
     @Path("{name}/petals")
-    public Response collectPetalsofGroup(@Context UriInfo uri, @PathParam("group-name") String groupName){       
+    public Response collectPetalsofGroup(@Context UriInfo uri,
+            @PathParam("name") String groupName) throws JSONException {       
         JSONObject jsonObject = new JSONObject();
         String path = uri.getBaseUri().toString();
 
@@ -283,6 +234,6 @@ public class GroupOperations {
             theLogger.log(Level.SEVERE, e.getMessage());
             return Response.status(404).
                     entity("Group " + groupName + " doesn't exist.").build();
-        }
+        } 
     }
 }
