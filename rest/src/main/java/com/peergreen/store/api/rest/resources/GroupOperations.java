@@ -29,18 +29,11 @@ import com.peergreen.store.db.client.exception.NoEntityFoundException;
 @Path("/group")
 public class GroupOperations {
 
-    private IGroupController groupController; 
-    private IStoreManagment storeManagement; 
+    private IGroupController groupController;
 
     private static Logger theLogger =
             Logger.getLogger(GroupOperations.class.getName());
 
-    /**
-     * @param storeManagement the storeManagement to set
-     */
-    public void setStoreManagement(IStoreManagment storeManagement) {
-        this.storeManagement = storeManagement;
-    }
 
     /**
      * @param groupController the groupController to set
@@ -277,48 +270,19 @@ public class GroupOperations {
 
             petals = groupController.collectPetals(groupName);
             Iterator<Petal> iteratorPetal = petals.iterator();
-            Petal p ; 
-            while(iteratorPetal.hasNext())
-            {
+            Petal p;
+            while (iteratorPetal.hasNext()) {
                 p = iteratorPetal.next();
-                jsonObject.put(p.getArtifactId(), path.concat("petal/"+p.getArtifactId()));
+                jsonObject.put(p.getArtifactId(),
+                        path.concat("petal/" + p.getVendor() + "/"
+                                + p.getArtifactId() + "/" + p.getVersion()));
             }
-
-            return Response.status(200).entity(jsonObject.toString()).build();   
+            return Response.status(200).entity("Petals accessible for group "
+                    + groupName + " : " + jsonObject.toString()).build();
         } catch (NoEntityFoundException e) {
-            theLogger.log(Level.SEVERE,e.getMessage());
-            return null;
-        } catch (JSONException e) {
-            theLogger.log(Level.SEVERE,e.getMessage());
-            return null;
+            theLogger.log(Level.SEVERE, e.getMessage());
+            return Response.status(404).
+                    entity("Group " + groupName + " doesn't exist.").build();
         }
-    }
-
-
-    /**
-     * Retrieve all the groups existing 
-     * @return A collection of all the group of users existing 
-     */
-    @GET
-    public Response getGroups(@Context UriInfo uri){
-        JSONObject jsonObject = new JSONObject(); 
-        String path = uri.getAbsolutePath().toString();
-
-        Collection<Group> groups = storeManagement.collectGroups();
-        
-        Group group; 
-        
-        Iterator<Group> gIterator = groups.iterator();
-        while(gIterator.hasNext())
-        {
-            group = gIterator.next();
-            try {
-                jsonObject.put(group.getGroupname(), path.concat("/"+ group.getGroupname()));
-            } catch (JSONException e) {
-                theLogger.log(Level.SEVERE,e.getMessage());
-                return null;
-            }
-        }
-        return Response.status(200).entity(jsonObject.toString()).build();   
     }
 }
