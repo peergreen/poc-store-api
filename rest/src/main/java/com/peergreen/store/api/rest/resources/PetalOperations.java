@@ -142,7 +142,6 @@ public class PetalOperations {
         return response.build();
     }
 
-
     @PUT
     @Path("/{vendorName}/{artifactId}/{version}/desc")
     public Response updateDescription(String payload,
@@ -166,6 +165,7 @@ public class PetalOperations {
         }
 
     }
+
     /**
      * Retrieve all the petals existing 
      * @return A collection of petals existing 
@@ -355,4 +355,24 @@ public class PetalOperations {
 
     }
 
+    // TODO: test purpose
+    @GET
+    @Path(value = "/remote/{vendor}/{artifactId}/{version}/{url}")
+    public File getPetalFromRemote(
+            @PathParam(value = "vendor") String vendor,
+            @PathParam(value = "artifactId") String artifactId,
+            @PathParam(value = "version") String version,
+            @PathParam(value = "url") String url) {
+
+        File file = null;
+        
+//        file = storeManagement.getPetalFromRemote(
+//                url,
+//                vendor,
+//                artifactId,
+//                version
+//        );
+        
+        return file;
+    }
 }
