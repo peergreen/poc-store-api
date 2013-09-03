@@ -27,22 +27,26 @@ public class CapabilityOperations {
     /**
      * Retrieve all petals satisfying a requirement.
      *
-     * @param id the requirement's id
-     * @return All the petals existing which satisfy the given requirement
+     * @param name capability name
+     * @param version capability version
+     * @param namespace capability namespace
+     * @return all petals providing the given capability
      * @throws JSONException
      */
     @GET
-    @Path("/{name}/{version}/petals")
+    @Path("/{name}/{version}/{namespace}/petals")
     public Response getPetals(@Context UriInfo uri, 
             @PathParam(value = "name") String name,
-            @PathParam(value = "version") String version) throws JSONException {
+            @PathParam(value = "version") String version,
+            @PathParam(value = "namespace") String namespace)
+                    throws JSONException {
 
         JSONObject result = new JSONObject();
         String path = uri.getBaseUri().toString();
 
         try {
             Collection<Petal> petals = petalController.
-                    getPetalsForCapability(name, version);
+                    getPetalsForCapability(name, version, namespace);
             if (!petals.isEmpty()) {
                 Iterator<Petal> it = petals.iterator();
                 Petal p;
