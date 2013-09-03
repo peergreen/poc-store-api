@@ -25,10 +25,13 @@ import org.json.JSONObject;
 
 import com.peergreen.store.controller.IPetalController;
 import com.peergreen.store.controller.IStoreManagment;
+import com.peergreen.store.controller.util.DependencyRequest;
+import com.peergreen.store.controller.util.DependencyResult;
 import com.peergreen.store.db.client.ejb.entity.Capability;
 import com.peergreen.store.db.client.ejb.entity.Category;
 import com.peergreen.store.db.client.ejb.entity.Petal;
 import com.peergreen.store.db.client.ejb.entity.Requirement;
+import com.peergreen.store.db.client.ejb.entity.Vendor;
 import com.peergreen.store.db.client.exception.EntityAlreadyExistsException;
 import com.peergreen.store.db.client.exception.NoEntityFoundException;
 
@@ -60,6 +63,42 @@ public class PetalOperations {
             Map<String, Object> mapResult = petalController
                     .getPetalMetadata(name, artifactId, version);
 
+            JSONObject n = new JSONObject();
+            try {
+                n.put("vendor", mapResult.get("vendor"));
+                n.put("artifactId", mapResult.get("artifactId"));
+                n.put("version", mapResult.get("version"));
+                n.put("description", mapResult.get("description"));
+
+                Category category = (Category)mapResult.get("category");
+                String catName = category.getCategoryName();
+                n.put("category", uri.getBaseUri().toString()
+                        .concat("category/"+catName));
+
+                // TODO: change link to flat representation
+
+                //            if(mapResult.get("requirements")
+                //                    instanceof Collection<?>){
+                //                @SuppressWarnings("unchecked")
+                //                Collection<Requirement> reqs =
+                //                        (Collection<Requirement>) mapResult.get("requirements") ;
+                //                        JSONObject reqsJson = new JSONObject();
+                //            Iterator<Requirement> reqIt = reqs.iterator();
+                //            
+                //            }
+
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
             return Response.ok(Status.OK).entity(mapResult.toString()).build();
         } catch (NoEntityFoundException e) {
             return Response.status(Status.NOT_FOUND).entity(
@@ -240,6 +279,7 @@ public class PetalOperations {
      * @return updated petal
      * @throws JSONException
      */
+    // TODO: change to id
     @PUT
     @Path("/local/{vendorName}/{artifactId}/{version}")
     public Response updatePetalLocal(
@@ -279,6 +319,7 @@ public class PetalOperations {
      * @return updated petal
      * @throws JSONException
      */
+    // TODO: change to id
     @PUT
     @Path("/staging/{vendorName}/{artifactId}/{version}")
     public Response updatePetalStaging(
@@ -316,30 +357,90 @@ public class PetalOperations {
      * @param version petal's version
      * @return associated capabilities
      */
+    // TODO: change to id
+    @GET
+    @Path("/{vendorName}/{artifactId}/{version}/capabilities")
     public Response getCapabilities(
             @PathParam(value = "vendorName") String vendorName,
             @PathParam(value = "artifactId") String artifactId,
             @PathParam(value = "version") String version) {
-        
-        petalController.getPetal(vendorName, artifactId, version);
-        return null;
+
+        Petal p = petalController.getPetal(vendorName, artifactId, version);
+
+        if (p == null) {
+            return Response.ok(Status.NOT_FOUND).build();
+        }
+
+        return Response.ok(Status.OK).entity(p.getCapabilities()).build();
     }
 
+    /**
+     * Method to retrieve all requirements needed by a petal.<br />
+     * Return codes:
+     * <ul>
+     *      <li>200 if petal found in database</li>
+     *      <li>404 if petal couldn't be found in database</li>
+     * </ul>
+     *
+     * @param vendorName petal's vendor name
+     * @param artifactId petal's artifactId
+     * @param version petal's version
+     * @return associated requirements
+     */
+    // TODO: change to id
+    @GET
+    @Path("/{vendorName}/{artifactId}/{version}/requirements")
+    public Response getRequirements(
+            @PathParam(value = "vendorName") String vendorName,
+            @PathParam(value = "artifactId") String artifactId,
+            @PathParam(value = "version") String version) {
 
+        Petal p = petalController.getPetal(vendorName, artifactId, version);
 
+        if (p == null) {
+            return Response.ok(Status.NOT_FOUND).build();
+        }
 
+        return Response.ok(Status.OK).entity(p.getRequirements()).build();
+    }
 
+    /**
+     * Method to retrieve all petals available for each required capability.
+     * 
+     * @param request DependencyRequest containing all constraints.
+     * @return list of all petals available for each required capability
+     * @throws NoEntityFoundException 
+     * @see DependencyRequest
+     */
+    public Response getTransitiveDependencies(
+            @PathParam(value = "vendorName") String vendorName,
+            @PathParam(value = "artifactId") String artifactId,
+            @PathParam(value = "version") String version) {
 
+        Petal p = petalController.getPetal(vendorName, artifactId, version);
+        Vendor v = petalController.getVendor(vendorName);
 
+        if (p == null || v == null) {
+            return Response.ok(Status.NOT_FOUND).build();
+        }
 
+        // build request
+        DependencyRequest request = new DependencyRequest();
+        request.setVendor(v);
+        request.setArtifactId(artifactId);
+        request.setVersion(version);
 
+        DependencyResult result = null;
+        try {
+            result = petalController
+                    .getTransitiveDependencies(request);
+        } catch (NoEntityFoundException e) {
+            // never reached cause of if (v == null) before
+            e.printStackTrace();
+        }
 
-
-    // TODO verified before
-
-
-
-
+        return Response.ok(Status.OK).entity(result).build();
+    }
 
     /**
      * Method to retrieve a petal from the local store.
@@ -349,6 +450,7 @@ public class PetalOperations {
      * @param version petal's version
      * @return {@link Response} response containing URL to the petal
      */
+    // TODO: change to id
     @GET
     @Path("/local/{vendor}/{artifactId}/{version}")
     public Response getPetalFromLocal(
@@ -365,15 +467,42 @@ public class PetalOperations {
     }
 
     /**
-     * Retrieve all the petals existing.
+     * Method to retrieve a petal from the remote associated stores.
      *
-     * @return A collection of petals existing
+     * @param vendor petal's vendor
+     * @param artifactId petal's artifactId
+     * @param version petal's version
+     * @return {@link Response} response containing URL to the petal
+     */
+    // TODO: change to id
+    @GET
+    @Path("/remote/{vendor}/{artifactId}/{version}")
+    public Response getPetalFromRemote(
+            @PathParam(value = "vendor") String vendor,
+            @PathParam(value = "artifactId") String artifactId,
+            @PathParam(value = "version") String version) throws Exception {
+
+        File petal = storeManagement
+                .getPetalFromRemote(vendor, artifactId, version);
+
+        ResponseBuilder response = Response.ok(petal);
+        response.header("Content-Disposition",
+                "attachment; filename="+artifactId+"."+version+".jar");
+        return response.status(Status.OK).build();
+    }
+
+    /**
+     * Retrieve the list of all petals in local store.
+     *
+     * @param uri context
+     * @return collection of existing local petals
      * @throws JSONException
      */
     @GET
     public Response getPetals(@Context UriInfo uri) throws JSONException
     {
         Collection<Petal> petals = storeManagement.collectPetals();
+        /*
         Iterator<Petal> it = petals.iterator();
 
         JSONObject jsonObject = new JSONObject();
@@ -385,7 +514,8 @@ public class PetalOperations {
                             p.getArtifactId() + "/" + p.getVersion()));
 
         }
-        return Response.status(Status.OK).entity(jsonObject).build();
+        */
+        return Response.status(Status.OK).entity(petals).build();
     }
 
     /**
@@ -424,6 +554,32 @@ public class PetalOperations {
         return Response.ok(Status.OK).entity(coll.toString()).build();
     }
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     /**
      * Method to submit a petal to validate and add to the store.
      *
