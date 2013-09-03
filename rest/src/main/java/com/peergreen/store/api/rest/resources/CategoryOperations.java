@@ -17,6 +17,7 @@ import javax.ws.rs.core.UriInfo;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.peergreen.store.controller.IPetalController;
 import com.peergreen.store.controller.IStoreManagment;
 import com.peergreen.store.db.client.ejb.entity.Category;
 import com.peergreen.store.db.client.exception.EntityAlreadyExistsException;
@@ -29,13 +30,7 @@ import com.peergreen.store.db.client.exception.EntityAlreadyExistsException;
 public class CategoryOperations {
 
     private IStoreManagment storeManagement;
-
-    /**
-     * @param storeManagement the storeManagement to set
-     */
-    public void setStoreManagement(IStoreManagment storeManagement) {
-        this.storeManagement = storeManagement;
-    }
+    private IPetalController petalController;
 
     /**
      * Retrieve information about a category 
@@ -43,14 +38,16 @@ public class CategoryOperations {
      */
     @GET
     @Path("{name}")
-    public Response showCategory(@PathParam("name") String name, @Context UriInfo uri){
+    public Response showCategory(
+            @Context UriInfo uri,
+            @PathParam("name") String name) {
 
-     //   Category cat = storeManagement.
+        //   Category cat = storeManagement.
         //TODO method to retrieve a category , using his given name 
-  
-        return null; 
+
+        return Response.ok().entity(storeManagement.getCategory(name)).build(); 
     }
-    
+
     /**
      * Retrieve petals of a category 
      * @param name A category's name
@@ -120,6 +117,24 @@ public class CategoryOperations {
     public Response delete(@PathParam("name") String name){
         storeManagement.removeCategory(name);
         return Response.status(201).entity("The category " + name + " was deleted sucessfully").build();
+    }
+
+    /**
+     * Method to set IStoreManagement instance to use.
+     * 
+     * @param storeManagement the storeManagement to set
+     */
+    public void setStoreManagement(IStoreManagment storeManagement) {
+        this.storeManagement = storeManagement;
+    }
+
+    /**
+     * Method to set IPetalController instance to use.
+     * 
+     * @param storeManagement the storeManagement to set
+     */
+    public void setPetalController(IPetalController petalController) {
+        this.petalController = petalController;
     }
 
 }

@@ -7,11 +7,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
@@ -39,20 +39,6 @@ public class PetalOperations {
     private IPetalController petalController;
 
     /**
-     * @param petalController the petalController to set
-     */
-    public void setPetalController(IPetalController petalController) {
-        this.petalController = petalController;
-    }
-
-    /**
-     * @param storeManagement the storeManagement to set
-     */
-    public void setStoreManagement(IStoreManagment storeManagement) {
-        this.storeManagement = storeManagement;
-    }
-
-    /**
      * Retrieves metadata associated to a petal 
      * @param vendor
      * @param artifactId
@@ -61,8 +47,11 @@ public class PetalOperations {
      * @throws JSONException 
      */
     @GET
-    @Path("/{vendor}/{artifactId}/{version}")
-    public Response getPetalMetadata (@Context UriInfo uri, @PathParam(value = "vendor") String name,
+    @Path("/{vendor}/{artifactId}/{version}/metadata")
+    // TODO: change to id
+    public Response getPetalMetadata (
+            @Context UriInfo uri,
+            @PathParam(value = "vendor") String name,
             @PathParam(value = "artifactId") String artifactId,
             @PathParam(value = "version") String version) throws JSONException {
 
@@ -80,7 +69,7 @@ public class PetalOperations {
             Category category = (Category)mapResult.get("category");
             String catName = category.getCategoryName();
             n.put("category", uri.getBaseUri().toString()
-                    .concat("category/"+catName));
+                    .concat("category/" + catName));
 
             //            if(mapResult.get("requirements") 
             //                    instanceof Collection<?>){
@@ -92,7 +81,10 @@ public class PetalOperations {
             //            
             //            }
 
-
+            //            this.groupSet = new HashSet<>();
+            //            this.requirements = requirements;
+            //            this.capabilities = capabilities;
+            //            this.origin = origin;
 
             return Response.status(200).entity(n.toString()).build();  
         } catch (NoEntityFoundException e) {
@@ -122,19 +114,6 @@ public class PetalOperations {
             @PathParam(value = "vendor") String vendor,
             @PathParam(value = "artifactId") String artifactId,
             @PathParam(value = "version") String version) throws Exception {
-        // retrieve petal with this id
-        //    	storeManagement.
-        //    	
-        //    	if (/* want the pdf file */) {
-        //	        return Response.ok(new File(/*...*/)).type("application/pdf").build(); 
-        //	    }
-        //
-        //    	    /* default to xml file */
-        //    	    return Response.ok(new FileInputStream("custom.xml")).type("application/xml").build();
-        //    	}
-        //    	
-        //    	Response rep = Response.status()
-        //    	Response.status(200).entity(jsonObject.toString()).build();
 
         File petal = storeManagement.getPetalFromLocal(vendor, artifactId, version);
         ResponseBuilder response = Response.ok(petal);
@@ -182,8 +161,8 @@ public class PetalOperations {
         while(it.hasNext()) {
             Petal p = it.next();
             String vendorName = p.getVendor().getVendorName();
-            jsonObject.put(p.getArtifactId() , uri.getAbsolutePath().toString().concat("/" +
-                    vendorName + "/" +
+            jsonObject.put(p.getArtifactId() , uri.getAbsolutePath().toString()
+                    .concat("/" + vendorName + "/" +
                     p.getArtifactId() + "/" + p.getVersion()));
 
         }
@@ -195,7 +174,7 @@ public class PetalOperations {
      * @return A collection of petals existing in the local repository 
      */
     @GET
-    @Path("/local-repository")
+    @Path("/local")
     //TODO change return type to Response
     public Collection<Petal> getLocalPetals(){
         return storeManagement.collectPetalsFromLocal();
@@ -224,25 +203,41 @@ public class PetalOperations {
     }
 
     /**
-     * Method to submit a petal to validate and add to the store 
-     * @param vendor the vendor of the petal to submit 
-     * @param artifactId the artifactId of the petal to submit
-     * @param version the version of the petal to submit
-     * @param description the description of the petal to submit
-     * @param category the category of the petal to submit
-     * @param requirements All the requirements of the petal to submit
-     * @param capabilities All the capabilities of the petal to submit
-     * @param petalBinary The file corresponding 
-     * @return The petal to validate 
+     * Method to submit a petal to validate and add to the store.
+     *
+     * @param vendor petal vendor
+     * @param artifactId petal artifactId
+     * @param version petal version
+     * @param description petal description
+     * @param category petal category
+     * @param requirements petal requirements
+     * @param capabilities petal capabilities
+     * @param petalBinary petal binary
+     * @return petal instance created in database
      */
     @POST
-    @Path(value = "/staging-repository/add")
+    @Path(value = "/staging")
     //TODO change return type to Response
-    public Petal addPetalToStaging(String vendorName, String artifactId, String version,String description, Category category, Set<Requirement> requirements,
-            Set<Capability> capabilities, File petalBinary){
+    public Petal submitPetal(
+            String vendorName,
+            String artifactId,
+            String version,
+            String description,
+            Category category,
+            Set<Requirement> requirements,
+            Set<Capability> capabilities,
+            File petalBinary) {
 
         try {
-            return storeManagement.submitPetal(vendorName, artifactId, version, description, category.getCategoryName(), requirements, capabilities, petalBinary);
+            return storeManagement.submitPetal(
+                    vendorName,
+                    artifactId,
+                    version,
+                    description,
+                    category.getCategoryName(),
+                    requirements,
+                    capabilities,
+                    petalBinary);
         } catch (EntityAlreadyExistsException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -261,9 +256,13 @@ public class PetalOperations {
      * @return The validated petal 
      */
     @PUT
-    @Path(value = "/staging-repository/{id}")
+    @Path(value = "/staging/{id}")
     //TODO change return type to Response
-    public Petal validatePetal(String vendorName, String artifactId, String version){
+    public Petal validatePetal(
+            @PathParam(value = "artifactId") String artifactId,
+            @PathParam(value = "version") String version,
+            @PathParam(value = "vendorName") String vendorName,
+            @Context UriInfo uri) {
         try {
             return storeManagement.validatePetal(vendorName, artifactId, version);
         } catch (NoEntityFoundException e) {
@@ -281,6 +280,7 @@ public class PetalOperations {
      * @return Http status code 200 if the deletion was made, or 404 if it isn't
      * cause the petal doesn't exist.
      */
+    // TODO: change to id
     @DELETE
     @Path("/local/{vendorName}/{artifactId}/{version}")
     public Response deletePetal (
@@ -305,6 +305,7 @@ public class PetalOperations {
      * or 404 if it isn't cause the petal doesn't exist.
      * @throws JSONException 
      */
+    // TODO: change to id
     @GET
     @Path("/{vendorName}/{artifactId}/{version}/desc")
     public Response getDescription ( 
@@ -317,6 +318,11 @@ public class PetalOperations {
         try {
             result = petalController.
                     getPetalMetadata(vendorName, artifactId, version);
+
+            if (result.size() == 0) {
+                return Response.status(404).build();
+            }
+
             resultJson.put("Description", result.get("description"));
             return Response.status(200).entity(resultJson.toString()).build();
         } catch (NoEntityFoundException e) {
@@ -334,8 +340,9 @@ public class PetalOperations {
      * or 404 if it isn't cause the petal doesn't exist.
      * @throws JSONException 
      */
+    // TODO: change to id
     @GET
-    @Path("/{vendorName}/{artifactId}/{version}/desc")
+    @Path("/{vendorName}/{artifactId}/{version}/category")
     public Response getCategory ( 
             @PathParam(value = "vendorName") String vendorName,
             @PathParam(value = "artifactId") String artifactId,
@@ -346,6 +353,11 @@ public class PetalOperations {
         try {
             result = petalController.
                     getPetalMetadata(vendorName, artifactId, version);
+            
+            if (result.size() == 0) {
+                return Response.status(404).build();
+            }
+            
             resultJson.put("Category", ((Category)result.get("category")).
                     getCategoryName());
             return Response.status(200).entity(resultJson.toString()).build();
@@ -365,14 +377,28 @@ public class PetalOperations {
             @PathParam(value = "url") String url) {
 
         File file = null;
-        
-//        file = storeManagement.getPetalFromRemote(
-//                url,
-//                vendor,
-//                artifactId,
-//                version
-//        );
-        
+
+        //        file = storeManagement.getPetalFromRemote(
+        //                url,
+        //                vendor,
+        //                artifactId,
+        //                version
+        //        );
+
         return file;
+    }
+
+    /**
+     * @param petalController the petalController to set
+     */
+    public void setPetalController(IPetalController petalController) {
+        this.petalController = petalController;
+    }
+
+    /**
+     * @param storeManagement the storeManagement to set
+     */
+    public void setStoreManagement(IStoreManagment storeManagement) {
+        this.storeManagement = storeManagement;
     }
 }

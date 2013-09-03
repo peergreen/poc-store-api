@@ -59,7 +59,7 @@ public class VendorOperations {
     public Response getVendor(@PathParam(value="name") String name) 
             throws JSONException {
 
-        Vendor vendor = storeManagment.getVendor(name);
+        Vendor vendor = petalController.getVendor(name);
         if(vendor == null) {
             /* the vendor doesn't exist */
             return Response.status(Status.NOT_FOUND).build() ;
@@ -140,7 +140,7 @@ public class VendorOperations {
         JSONObject jsonObject = new JSONObject(payload);
         String description = jsonObject.getString("description");
         try {
-            storeManagment.updateVendor(name, description);
+            petalController.updateVendor(name, description);
             return Response.status(201).entity(jsonObject.toString()).build();
         } catch (NoEntityFoundException e) {
             return Response.status(Status.NOT_FOUND).build() ;

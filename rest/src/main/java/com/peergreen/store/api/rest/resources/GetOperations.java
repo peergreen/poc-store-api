@@ -95,6 +95,7 @@ public class GetOperations {
      * @throws JSONException
      */
     @GET
+    @Path("vendors")
     public Response getVendors(@Context UriInfo uri) throws JSONException{
         JSONObject jsonObject = new JSONObject();
         String path = uri.getAbsolutePath().toString();
