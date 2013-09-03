@@ -17,6 +17,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
+import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
 import org.json.JSONException;
@@ -39,11 +40,12 @@ public class PetalOperations {
     private IPetalController petalController;
 
     /**
-     * Retrieves metadata associated to a petal 
-     * @param vendor
-     * @param artifactId
-     * @param version
-     * @return
+     * Retrieves metadata associated to a petal.
+     * 
+     * @param vendor petal's vendor
+     * @param artifactId petal's artifactId
+     * @param version petal's version
+     * @return corresponding metadata (code 200) or code 404
      * @throws JSONException 
      */
     @GET
@@ -60,7 +62,9 @@ public class PetalOperations {
         try {
             mapResult = petalController.getPetalMetadata(name, 
                     artifactId, version);
-
+            
+            return Response.ok(Status.OK).entity(mapResult.toString()).build();
+            /*
             n.put("vendor", mapResult.get("vendor"));
             n.put("artifactId", mapResult.get("artifactId"));
             n.put("version", mapResult.get("version"));
@@ -86,9 +90,11 @@ public class PetalOperations {
             //            this.capabilities = capabilities;
             //            this.origin = origin;
 
-            return Response.status(200).entity(n.toString()).build();  
+            return Response.status(200).entity(n.toString()).build();
+            */
         } catch (NoEntityFoundException e) {
-            return Response.status(404).entity(e.getMessage()).build();
+            return Response.status(Status.NOT_FOUND).entity(
+                    e.getMessage()).build();
         } 
 
 
@@ -115,10 +121,12 @@ public class PetalOperations {
             @PathParam(value = "artifactId") String artifactId,
             @PathParam(value = "version") String version) throws Exception {
 
-        File petal = storeManagement.getPetalFromLocal(vendor, artifactId, version);
+        File petal = storeManagement.getPetalFromLocal(
+                vendor, artifactId, version);
         ResponseBuilder response = Response.ok(petal);
-        response.header("Content-Disposition", "attachment; filename="+artifactId+"."+version+".jar");
-        return response.build();
+        response.header("Content-Disposition",
+                "attachment; filename="+artifactId+"."+version+".jar");
+        return response.status(Status.OK).build();
     }
 
     @PUT
@@ -137,18 +145,18 @@ public class PetalOperations {
         try {
             petalController.updateDescription(vendorName, artifactId, 
                     version, description);
-            return Response.status(200).entity(path.
+            return Response.status(Status.OK).entity(path.
                     concat("/{vendorName}/{artifactId}/{version}")).build();
         } catch (NoEntityFoundException e) {
-            return Response.status(404).build();
+            return Response.status(Status.NOT_FOUND).build();
         }
-
     }
 
     /**
-     * Retrieve all the petals existing 
-     * @return A collection of petals existing 
-     * @throws JSONException 
+     * Retrieve all the petals existing.
+     *
+     * @return A collection of petals existing
+     * @throws JSONException
      */
     @GET
     public Response getPetals(@Context UriInfo uri) throws JSONException
@@ -166,12 +174,13 @@ public class PetalOperations {
                     p.getArtifactId() + "/" + p.getVersion()));
 
         }
-        return Response.status(200).entity(jsonObject).build();
+        return Response.status(Status.OK).entity(jsonObject).build();
     }
 
     /**
-     * Retrieve all the petals from the local repository 
-     * @return A collection of petals existing in the local repository 
+     * Retrieve all the petals from the local repository.
+     *
+     * @return A collection of petals existing in the local repository
      */
     @GET
     @Path("/local")

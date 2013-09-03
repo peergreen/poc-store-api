@@ -25,14 +25,8 @@ public class CapabilityOperations {
     private IPetalController petalController;
 
     /**
-     * @param petalController the petalController to set
-     */
-    public void setPetalController(IPetalController petalController) {
-        this.petalController = petalController;
-    }
-
-    /**
      * Retrieve all petals satisfying a requirement.
+     *
      * @param id the requirement's id
      * @return All the petals existing which satisfy the given requirement
      * @throws JSONException
@@ -58,14 +52,24 @@ public class CapabilityOperations {
                             + p.getVendor() + "/" + p.getArtifactId()
                             + "/" + p.getVersion()));
                 }
-                return Response.status(200).entity(result.toString()).build();
+                return Response.status(Status.OK).entity(
+                        result.toString()).build();
             } else{
-                return Response.status(200).entity("No petal does not provide "
-                        + name).build();
+                return Response.status(Status.OK).entity(
+                        "No petal does not provide " + name).build();
             }
         } catch (NoEntityFoundException e) {
             return Response.status(Status.NOT_FOUND).build();
         }
+    }
+    
+    /**
+     * Method to set IPetalController instance to use.
+     *
+     * @param petalController the PetalController to set
+     */
+    public void setPetalController(IPetalController petalController) {
+        this.petalController = petalController;
     }
 
 }

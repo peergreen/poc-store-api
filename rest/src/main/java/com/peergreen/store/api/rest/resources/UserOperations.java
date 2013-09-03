@@ -36,17 +36,10 @@ public class UserOperations {
             Logger.getLogger(UserOperations.class.getName());
 
     /**
-     * @param userController the userController to set
-     */
-    public void setUserController(IUserController userController) {
-        this.userController = userController;
-    }
-
-
-    /**
-     * Retrieve data about the user  
-     * @param pseudo the user's pseudo 
-     * @return A map containing the user attribute and value 
+     * Retrieve data about the user.
+     *
+     * @param pseudo the user's pseudo
+     * @return A map containing the user attribute and value
      */
     @GET
     @Produces("application/json")
@@ -56,20 +49,22 @@ public class UserOperations {
         try {
             mapResult = userController.getUserMetadata(pseudo);
             JSONObject n = new JSONObject(mapResult);
-            return Response.status(200).entity(n.toString()).build();  
+            return Response.status(Status.OK).entity(n.toString()).build();  
         } catch (NoEntityFoundException e) {
-            return Response.status(404).entity(e.getMessage()).build();
+            return Response.status(Status.NOT_FOUND).entity(
+                    e.getMessage()).build();
         }
 
     }
 
     /**
-     * Creates a new user 
-     * @param pseudo the user's pseudo 
-     * @param password the user's password 
-     * @param email the user's mail 
-     * @return The user created 
-     * @throws JSONException 
+     * Creates a new user.
+     *
+     * @param pseudo the user's pseudo
+     * @param password the user's password
+     * @param email the user's mail
+     * @return The user created
+     * @throws JSONException
      */
     @POST
     @Produces("application/json")
@@ -83,7 +78,7 @@ public class UserOperations {
             String password = userInfo.getString("password");
             String email = userInfo.getString("email");
             userController.addUser(pseudo, password, email);
-            return Response.status(201).
+            return Response.status(Status.CREATED).
                     entity(uri.getBaseUri().toString().
                             concat("user/" + pseudo)).build();
         } 
@@ -94,29 +89,31 @@ public class UserOperations {
     }
 
     /**
-     * Delete a user 
-     * @param pseudo the pseudo of the user to delete 
+     * Delete a user.
+     *
+     * @param pseudo the pseudo of the user to delete
      */
     @DELETE
     @Path("{pseudo}")
     public Response removeUser(@PathParam("pseudo") String pseudo){
 
         if (userController.removeUser(pseudo) == null) {
-            return Response.status(200).
+            return Response.status(Status.OK).
                     entity("The user " + pseudo + " was deleted sucessfully.").
                     build();
         } else {
-            return Response.status(404).
+            return Response.status(Status.NOT_FOUND).
                     entity("The user " + pseudo + " doesn't exist.").build();
         }
     }
 
     /**
      * Modify an existing user.
+     *
      * @param pseudo the user's pseudo
      * @param payload the user's password and email
      * @return the user whose data has been modified
-     * @throws JSONException 
+     * @throws JSONException
      */
     @PUT
     @Path("{pseudo}")
@@ -131,12 +128,12 @@ public class UserOperations {
             password = jsonObject.getString("password");
             email = jsonObject.getString("email");
             userController.updateUser(pseudo, password, email);
-            return Response.status(200).
+            return Response.status(Status.OK).
                     entity("The user has been updated successfully :" + '\n'
                             + jsonObject.toString()).build();
         } catch (NoEntityFoundException e) {
             theLogger.log(Level.SEVERE, e.getMessage());
-            return Response.status(404).
+            return Response.status(Status.NOT_FOUND).
                     entity("The user " + pseudo + " doesn't exist.").build();
         }
     }
@@ -144,6 +141,7 @@ public class UserOperations {
 
     /**
      * Retrieve all the groups to which a user belongs.
+     *
      * @param pseudo the user's pseudo
      * @return All the groups to which the user belongs
      * @throws JSONException
@@ -173,22 +171,22 @@ public class UserOperations {
                             path.concat("group/" + groupName));
                 }
 
-                return Response.status(200).
-                        entity(jsonObject.toString()).build(); }
-            else {
-                return Response.status(200).
+                return Response.status(Status.OK).
+                        entity(jsonObject.toString()).build();
+            } else {
+                return Response.status(Status.OK).
                         entity("No groups for user " + pseudo ).build();
             }
         } catch (NoEntityFoundException e) {
             theLogger.log(Level.SEVERE, e.getMessage());
-            return Response.status(404).
+            return Response.status(Status.NOT_FOUND).
                     entity("The user " + pseudo + " doesn't exist.").build();
-
         }
     }
 
     /**
-     * Retrieve all the petals to which a user has access
+     * Retrieve all the petals to which a user has access.
+     *
      * @param pseudo the user's pseudo
      * @return All the petals to which the user has access
      * @throws JSONException
@@ -215,20 +213,26 @@ public class UserOperations {
                             + petal.getVendor() + "/" + petal.getArtifactId()
                             + "/" + petal.getVersion()));
                 }
-                return Response.status(200).
+                return Response.status(Status.OK).
                         entity(jsonObject.toString()).build();
             } else {
-                return Response.status(200).
-                        entity("No petals accessible for user " + pseudo).
-                        build();
+                return Response.status(Status.OK). entity(
+                        "No petals accessible for user " + pseudo).build();
             }
         } catch (NoEntityFoundException e) {
             theLogger.log(Level.SEVERE,e.getMessage());
-            return Response.status(404).
+            return Response.status(Status.NOT_FOUND).
                     entity("The user " + pseudo + " doesn't exist.").build();
-
         }
     }
 
-}
+    /**
+     * Method to set IUserController instance to use.
+     *
+     * @param userController the UserController to set
+     */
+    public void setUserController(IUserController userController) {
+        this.userController = userController;
+    }
 
+}

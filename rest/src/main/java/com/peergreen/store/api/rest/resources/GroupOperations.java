@@ -41,6 +41,15 @@ public class GroupOperations {
         this.groupController = groupController;
     }
 
+    /**
+     * Method to retrieve a group thanks to its name.
+     *
+     * @param uri
+     * @param name group's name
+     * @return specified group, or {@literal null}
+     * if no corresponding group found
+     * @throws JSONException
+     */
     @GET
     @Path("{name}")
     public Response getGroup(@Context UriInfo uri,
@@ -76,19 +85,21 @@ public class GroupOperations {
 
             jsonObject.put("users", usersJson.toString());
             jsonObject.put("petals", petalsJson.toString());
-            return Response.status(200).entity(jsonObject.get("users").
+            
+            return Response.status(Status.OK).entity(jsonObject.get("users").
                     toString() + '\n'
                     + jsonObject.get("petals").toString()).build();
         } catch (NoEntityFoundException e) {
             theLogger.log(Level.SEVERE, e.getMessage());
-            return Response.status(404).
+            return Response.status(Status.NOT_FOUND).
                     entity("Group " + name + " doesn't exist.").build();
         }
     }
 
 
     /**
-     * Create a group of users  
+     * Create a group of users.
+     *
      * @param name the name of the group to create
      * @return the group created
      * @throws JSONException 
@@ -111,8 +122,9 @@ public class GroupOperations {
     }
 
     /**
-     * Delete a group 
-     * @param name the name of the group to delete 
+     * Delete a group.
+     *
+     * @param name the name of the group to delete
      */
     @DELETE
     @Path("{name}")

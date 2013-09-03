@@ -8,6 +8,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
 import org.json.JSONException;
@@ -25,25 +26,12 @@ import com.peergreen.store.db.client.ejb.entity.Vendor;
 @Path("/")
 public class GetOperations {
 
-    /**
-     * StoreManagement to use methods to collect entities.
-     */
     private IStoreManagment storeManagment;
-
     private IPetalController petalController;
-    /**
-     * @param storeManagment the storeManagment to set
-     */
-    public void setStoreManagment(IStoreManagment storeManagment) {
-        this.storeManagment = storeManagment;
-    }
-
-    public void setPetalController(IPetalController petalController) {
-        this.petalController = petalController;
-    }
 
     /**
-     * Retrieve all the user existing.
+     * Retrieve all the user existing in database.
+     * 
      * @param uri Identifier uri injected by jax-rs
      * @return A collection of all the user existing
      * @throws JSONException
@@ -63,7 +51,7 @@ public class GetOperations {
                         path.concat("user/" + u.getPseudo()));
             }
         }
-        return Response.status(200).entity(usersJson.toString()).build();
+        return Response.status(Status.OK).entity(usersJson.toString()).build();
     }
 
     /**
@@ -73,7 +61,7 @@ public class GetOperations {
      */
     @GET
     @Path("groups")
-    public Response getGroups(@Context UriInfo uri) throws JSONException{
+    public Response getGroups(@Context UriInfo uri) throws JSONException {
         JSONObject jsonObject = new JSONObject();
         String path = uri.getAbsolutePath().toString();
 
@@ -86,7 +74,7 @@ public class GetOperations {
             jsonObject.put(group.getGroupname(),
                     path.concat("/" + group.getGroupname()));
         }
-        return Response.status(200).entity(jsonObject.toString()).build();
+        return Response.status(Status.OK).entity(jsonObject.toString()).build();
     }
 
     /**
@@ -96,7 +84,7 @@ public class GetOperations {
      */
     @GET
     @Path("vendors")
-    public Response getVendors(@Context UriInfo uri) throws JSONException{
+    public Response getVendors(@Context UriInfo uri) throws JSONException {
         JSONObject jsonObject = new JSONObject();
         String path = uri.getAbsolutePath().toString();
         Collection<Vendor> vendors = petalController.collectVendors();
@@ -107,6 +95,25 @@ public class GetOperations {
             jsonObject.put(vendor.getVendorName(),
                     path.concat("/" + vendor.getVendorName()));
         }
-        return Response.status(200).entity(jsonObject.toString()).build();
+        return Response.status(Status.OK).entity(jsonObject.toString()).build();
     }
+
+    /**
+     * Method to set IStoreManagement instance to use.
+     * 
+     * @param storeManagement the storeManagement to set
+     */
+    public void setStoreManagment(IStoreManagment storeManagment) {
+        this.storeManagment = storeManagment;
+    }
+
+    /**
+     * Method to set IPetalController instance to use.
+     * 
+     * @param petalController the PetalController to set
+     */
+    public void setPetalController(IPetalController petalController) {
+        this.petalController = petalController;
+    }
+
 }

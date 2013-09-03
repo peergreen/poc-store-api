@@ -12,6 +12,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.Response.Status;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -28,12 +29,6 @@ public class LinkOperations {
             Logger.getLogger(UserOperations.class.getName());
 
     /**
-     * @param storeManagement the storeManagement to set
-     */
-    public void setStoreManagement(IStoreManagment storeManagement) {
-        this.storeManagement = storeManagement;
-    }
-    /**
      * Create a new link between store
      * @param url the link's url 
      * @param description the link's description
@@ -47,7 +42,9 @@ public class LinkOperations {
             String url = jsonObject.getString("url");
             String description = jsonObject.getString("description");
             storeManagement.addLink(url, description);
-            return Response.status(201).entity("The link with thir url : " + url + " was created successfully").build();
+            return Response.status(Status.CREATED).entity(
+                    "The link with thir url : " + url +
+                    " was created successfully").build();
 
         } catch (JSONException e) {
             theLogger.log(Level.SEVERE,e.getMessage());
@@ -97,13 +94,23 @@ public class LinkOperations {
         //        while(iterator.hasNext()){
         //            Link = iterator.next();
         ////            try {
-        ////                jsonObject.put(Link.getLinkName(), uri.getAbsolutePath().toString().concat("/" + Link.getLinkName()));
+        ////                jsonObject.put(Link.getLinkName(),uri.getAbsolutePath().toString().concat("/" + Link.getLinkName()));
         ////            } catch (JSONException e) {
         ////                // TODO Auto-generated catch block
         ////                e.printStackTrace();
         ////            }
         //        }
-        //        return Response.status(200).entity(jsonObject.toString()).build();
+        //        return Response.status(Status.OK).entity(jsonObject.toString()).build();
         return null; 
     }
+
+    /**
+     * Method to set IStoreManagment instance to use.
+     *
+     * @param storeManagement the StoreManagement to set
+     */
+    public void setStoreManagement(IStoreManagment storeManagement) {
+        this.storeManagement = storeManagement;
+    }
+
 }

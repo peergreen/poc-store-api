@@ -12,12 +12,12 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.peergreen.store.controller.IPetalController;
 import com.peergreen.store.controller.IStoreManagment;
 import com.peergreen.store.db.client.ejb.entity.Category;
 import com.peergreen.store.db.client.exception.EntityAlreadyExistsException;
@@ -30,11 +30,13 @@ import com.peergreen.store.db.client.exception.EntityAlreadyExistsException;
 public class CategoryOperations {
 
     private IStoreManagment storeManagement;
-    private IPetalController petalController;
 
     /**
-     * Retrieve information about a category 
-     * 
+     * Retrieve information about a category.
+     *
+     * @param uri
+     * @param name category name
+     * @return corresponding category (code 200) or code 404
      */
     @GET
     @Path("{name}")
@@ -42,16 +44,15 @@ public class CategoryOperations {
             @Context UriInfo uri,
             @PathParam("name") String name) {
 
-        //   Category cat = storeManagement.
-        //TODO method to retrieve a category , using his given name 
-
-        return Response.ok().entity(storeManagement.getCategory(name)).build(); 
+        return Response.ok(Status.OK).entity(
+                storeManagement.getCategory(name)).build(); 
     }
 
     /**
-     * Retrieve petals of a category 
+     * Retrieve petals of a category.
+     *
      * @param name A category's name
-     * @return A collection of petals which belongs to the category 
+     * @return A collection of petals which belongs to the category
      */
     @GET
     @Path("{name}/petals")
@@ -62,8 +63,9 @@ public class CategoryOperations {
     }
 
     /**
-     * Create a category 
-     * @param name the name of the category to create
+     * Create a category.
+     *
+     * @param name name of the category to create
      * @return the category created
      */
     @POST
@@ -73,7 +75,8 @@ public class CategoryOperations {
             jsonObject = new JSONObject(payload);
             String name = jsonObject.getString("name");
             storeManagement.createCategory(name);
-            return Response.status(201).entity(uri.getBaseUri().toString().concat("/"+name)).build();
+            return Response.status(Status.CREATED).entity(
+                    uri.getBaseUri().toString().concat("/"+name)).build();
         } catch (JSONException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -86,8 +89,9 @@ public class CategoryOperations {
     }
 
     /**
-     * Retrieve all the petal's category existing 
-     * @return A collection of petals's category existing 
+     * Retrieve all the petal's category existing.
+     *
+     * @return A collection of petals's category existing
      */
     @GET
     public Response getCategories(@Context UriInfo uri){   
@@ -99,42 +103,38 @@ public class CategoryOperations {
         while(iterator.hasNext()){
             category = iterator.next();
             try {
-                jsonObject.put(category.getCategoryName(), uri.getAbsolutePath().toString().concat("/" + category.getCategoryName()));
+                jsonObject.put(
+                        category.getCategoryName(),
+                        uri.getAbsolutePath().toString()
+                        .concat("/" + category.getCategoryName()));
             } catch (JSONException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         }
-        return Response.status(200).entity(jsonObject.toString()).build();
+        return Response.status(Status.OK).entity(jsonObject.toString()).build();
     }
 
     /**
-     * Delete a category 
-     * @param name the name of the category to delete 
+     * Delete a category.
+     *
+     * @param name the name of the category to delete
      */
     @DELETE
     @Path("{name}")
     public Response delete(@PathParam("name") String name){
         storeManagement.removeCategory(name);
-        return Response.status(201).entity("The category " + name + " was deleted sucessfully").build();
+        return Response.status(Status.CREATED).entity(
+                "The category " + name + " was deleted sucessfully").build();
     }
 
     /**
      * Method to set IStoreManagement instance to use.
-     * 
+     *
      * @param storeManagement the storeManagement to set
      */
     public void setStoreManagement(IStoreManagment storeManagement) {
         this.storeManagement = storeManagement;
-    }
-
-    /**
-     * Method to set IPetalController instance to use.
-     * 
-     * @param storeManagement the storeManagement to set
-     */
-    public void setPetalController(IPetalController petalController) {
-        this.petalController = petalController;
     }
 
 }
