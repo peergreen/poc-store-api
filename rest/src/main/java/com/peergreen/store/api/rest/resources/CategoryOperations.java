@@ -37,15 +37,23 @@ public class CategoryOperations {
      * @param uri
      * @param name category name
      * @return corresponding category (code 200) or code 404
+     * @throws JSONException 
      */
     @GET
     @Path("{name}")
     public Response showCategory(
             @Context UriInfo uri,
-            @PathParam("name") String name) {
+            @PathParam("name") String name) throws JSONException {
 
-        return Response.ok(Status.OK).entity(
-                storeManagement.getCategory(name)).build(); 
+        Category c = storeManagement.getCategory(name);
+        
+        JSONObject obj = new JSONObject();
+        
+        obj.put("name", c.getCategoryName());
+        obj.put("href", uri.getBaseUri().toString()
+                .concat("categories/" + c.getCategoryName()));
+        
+        return Response.ok(Status.OK).entity(obj.toString()).build(); 
     }
 
     /**

@@ -3,7 +3,6 @@ package com.peergreen.store.api.rest.resources;
 import java.io.File;
 import java.io.InputStream;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -55,6 +54,7 @@ public class PetalOperations {
     @Path("/{vendor}/{artifactId}/{version}/metadata")
     // TODO: change to id
     public Response getPetalMetadata (
+            @Context UriInfo uri,
             @PathParam(value = "vendor") String name,
             @PathParam(value = "artifactId") String artifactId,
             @PathParam(value = "version") String version) throws JSONException {
@@ -64,42 +64,35 @@ public class PetalOperations {
                     .getPetalMetadata(name, artifactId, version);
 
             JSONObject n = new JSONObject();
-            try {
-                n.put("vendor", mapResult.get("vendor"));
-                n.put("artifactId", mapResult.get("artifactId"));
-                n.put("version", mapResult.get("version"));
-                n.put("description", mapResult.get("description"));
+            n.put("vendor", mapResult.get("vendor"));
+            n.put("artifactId", mapResult.get("artifactId"));
+            n.put("version", mapResult.get("version"));
+            n.put("description", mapResult.get("description"));
 
-                Category category = (Category)mapResult.get("category");
-                String catName = category.getCategoryName();
-                n.put("category", uri.getBaseUri().toString()
-                        .concat("category/"+catName));
+            Category category = (Category)mapResult.get("category");
+            String catName = category.getCategoryName();
+            
+            JSONObject cat = new JSONObject();
+            cat.put("categoryName", catName);
+            cat.put("href", uri.getBaseUri().toString()
+                    .concat("category/"+catName));
+            
+            n.put("category", cat.toString());
 
-                // TODO: change link to flat representation
+            // TODO: change link to flat representation
 
-                //            if(mapResult.get("requirements")
-                //                    instanceof Collection<?>){
-                //                @SuppressWarnings("unchecked")
-                //                Collection<Requirement> reqs =
-                //                        (Collection<Requirement>) mapResult.get("requirements") ;
-                //                        JSONObject reqsJson = new JSONObject();
-                //            Iterator<Requirement> reqIt = reqs.iterator();
-                //            
-                //            }
+            //            if(mapResult.get("requirements")
+            //                    instanceof Collection<?>){
+            //                @SuppressWarnings("unchecked")
+            //                Collection<Requirement> reqs =
+            //                        (Collection<Requirement>) mapResult.get("requirements") ;
+            //                        JSONObject reqsJson = new JSONObject();
+            //            Iterator<Requirement> reqIt = reqs.iterator();
+            //            
+            //            }
 
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            return Response.ok(Status.OK).entity(mapResult.toString()).build();
+            System.out.println(n.toString());
+            return Response.ok(Status.OK).entity(n.toString()).build();
         } catch (NoEntityFoundException e) {
             return Response.status(Status.NOT_FOUND).entity(
                     e.getMessage()).build();
@@ -514,7 +507,7 @@ public class PetalOperations {
                             p.getArtifactId() + "/" + p.getVersion()));
 
         }
-        */
+         */
         return Response.status(Status.OK).entity(petals).build();
     }
 
@@ -554,32 +547,32 @@ public class PetalOperations {
         return Response.ok(Status.OK).entity(coll.toString()).build();
     }
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     /**
      * Method to submit a petal to validate and add to the store.
      *
