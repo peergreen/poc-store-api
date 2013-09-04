@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -55,12 +56,13 @@ public class PetalOperations {
      * @throws JSONException 
      */
     @GET
-    @Path("/{id}/metadata")
+    @Path("{id}/metadata")
     public Response getPetalMetadata (
             @Context UriInfo uri,
-            @PathParam(value = "id") int id) throws JSONException {
+            @PathParam(value = "id") String id) throws JSONException {
 
-        Petal p = petalController.getPetalById(id);
+        int intId = Integer.parseInt(id);
+        Petal p = petalController.getPetalById(intId);
         if (p == null) {
             return Response.ok(Status.NOT_FOUND).build();
         }
@@ -203,21 +205,25 @@ public class PetalOperations {
     /**
      * Delete a petal from the local store.
      *
-     * @param vendorName name of the vendor which provide the petal to delete
-     * @param artifactId artifactId of the petal to delete
-     * @param version version of the petal to delete
-     * @return HTTP status code 200 if the deletion has been made, or 404 if not
-     * because the petal doesn't exist.
+     * @param id petal's id
+     * @return HTTP status code 200 if the deletion has been made,
+     * or 404 if not because the petal doesn't exist.
      */
     @DELETE
-    @Path("/local/{vendorName}/{artifactId}/{version}")
+    @Path("/local/{id}")
     public Response deletePetal (
-            @PathParam(value = "vendorName") String vendorName,
-            @PathParam(value = "artifactId") String artifactId,
-            @PathParam(value = "version") String version) {
+            @PathParam(value = "id") int id) {
+
+        Petal petal = petalController.getPetalById(id);
+        if (petal == null) {
+            return Response.ok(Status.NOT_FOUND).build();
+        }
 
         if(petalController.
-                removePetal(vendorName, artifactId, version) == null) {
+                removePetal(
+                        petal.getVendor().getVendorName(),
+                        petal.getArtifactId(),
+                        petal.getVersion()) == null) {
             return Response.status(Status.NOT_FOUND).build();
         } else {
             return Response.status(Status.OK).build();
@@ -362,33 +368,49 @@ public class PetalOperations {
      * @return updated petal
      * @throws JSONException
      */
-    // TODO: change to id
     @PUT
     @Path("/local/{id}")
     public Response updatePetalLocal(
             String payload,
-            @PathParam(value = "vendorName") String vendorName,
-            @PathParam(value = "artifactId") String artifactId,
-            @PathParam(value = "version") String version)
-                    throws JSONException {
+            @Context UriInfo uri,
+            @PathParam(value = "id") int id) throws JSONException {
+
+        Petal p = petalController.getPetalById(id);
 
         JSONObject jsonObject = new JSONObject(payload);
         String description = jsonObject.getString("description");
         String categoryName = jsonObject.getString("categoryName");
 
         try {
-            Petal p = petalController.updateDescription(
-                    vendorName, artifactId, version, description);
+            p = petalController.updateDescription(
+                    p.getVendor().getVendorName(),
+                    p.getArtifactId(),
+                    p.getVersion(),
+                    description);
+
             p = petalController.setCategory(
-                    vendorName, artifactId, version, categoryName);
-            return Response.status(Status.OK).entity(p).build();
+                    p.getVendor().getVendorName(),
+                    p.getArtifactId(),
+                    p.getVersion(),
+                    categoryName);
+
+            JSONObject rep = new JSONObject();
+            rep.put("id", p.getPid());
+            rep.put("vendorName", p.getVendor().getVendorName());
+            rep.put("artifactId", p.getArtifactId());
+            rep.put("version", p.getVersion());
+            rep.put("href", uri.getBaseUri().toString()
+                    .concat("petal/" + p.getPid() + "/metadata"));
+
+            return Response.status(Status.OK).entity(rep.toString()).build();
         } catch (NoEntityFoundException e) {
             return Response.status(Status.NOT_FOUND).build();
         }
     }
 
     /**
-     * Method to update a petal (description and category) in staging store.<br />
+     * Method to update a petal (description and category)
+     * in staging store.<br />
      * Return codes:
      * <ul>
      *      <li>200 if petal updated successfully</li>
@@ -396,31 +418,44 @@ public class PetalOperations {
      * </ul>
      *
      * @param payload payload containing new description and category
-     * @param vendorName petal's vendor name
-     * @param artifactId petal's artifactId
-     * @param version petal's version
+     * @param id petal's id
      * @return updated petal
      * @throws JSONException
      */
-    // TODO: change to id
     @PUT
-    @Path("/staging/{vendorName}/{artifactId}/{version}")
+    @Path("/staging/{id}")
     public Response updatePetalStaging(
             String payload,
-            @PathParam(value = "vendorName") String vendorName,
-            @PathParam(value = "artifactId") String artifactId,
-            @PathParam(value = "version") String version)
-                    throws JSONException {
+            @Context UriInfo uri,
+            @PathParam(value = "id") int id) throws JSONException {
+
+        Petal p = petalController.getPetalById(id);
 
         JSONObject jsonObject = new JSONObject(payload);
         String description = jsonObject.getString("description");
         String categoryName = jsonObject.getString("categoryName");
 
         try {
-            Petal p = petalController.updateDescription(
-                    vendorName, artifactId, version, description);
+            p = petalController.updateDescription(
+                    p.getVendor().getVendorName(),
+                    p.getArtifactId(),
+                    p.getVersion(),
+                    description);
+
             p = petalController.setCategory(
-                    vendorName, artifactId, version, categoryName);
+                    p.getVendor().getVendorName(),
+                    p.getArtifactId(),
+                    p.getVersion(),
+                    categoryName);
+
+            JSONObject rep = new JSONObject();
+            rep.put("id", p.getPid());
+            rep.put("vendorName", p.getVendor().getVendorName());
+            rep.put("artifactId", p.getArtifactId());
+            rep.put("version", p.getVersion());
+            rep.put("href", uri.getBaseUri().toString()
+                    .concat("petal/" + p.getPid() + "/metadata"));
+
             return Response.status(Status.OK).entity(p).build();
         } catch (NoEntityFoundException e) {
             return Response.status(Status.NOT_FOUND).build();
@@ -435,9 +470,7 @@ public class PetalOperations {
      *      <li>404 if petal couldn't be found in database</li>
      * </ul>
      *
-     * @param vendorName petal's vendor name
-     * @param artifactId petal's artifactId
-     * @param version petal's version
+     * @param id petal's id
      * @return associated capabilities
      * @throws JSONException
      */
@@ -487,26 +520,42 @@ public class PetalOperations {
      *      <li>404 if petal couldn't be found in database</li>
      * </ul>
      *
-     * @param vendorName petal's vendor name
-     * @param artifactId petal's artifactId
-     * @param version petal's version
+     * @param id petal's id
      * @return associated requirements
+     * @throws JSONException
      */
-    // TODO: change to id
     @GET
-    @Path("/{vendorName}/{artifactId}/{version}/requirements")
+    @Path("/{id}/requirements")
     public Response getRequirements(
-            @PathParam(value = "vendorName") String vendorName,
-            @PathParam(value = "artifactId") String artifactId,
-            @PathParam(value = "version") String version) {
+            @Context UriInfo uri,
+            @PathParam(value = "id") int id) throws JSONException {
 
-        Petal p = petalController.getPetal(vendorName, artifactId, version);
+        Petal p = petalController.getPetalById(id);
 
         if (p == null) {
             return Response.ok(Status.NOT_FOUND).build();
         }
+        
+        JSONObject rep = new JSONObject();
+        
+        List<JSONObject> reqList = new ArrayList<>();
+        Collection<Requirement> reqs = p.getRequirements();
+        Iterator<Requirement> itReq = reqs.iterator();
+        while (itReq.hasNext()) {
+            Requirement r = itReq.next();
+            JSONObject curr = new JSONObject();
+            curr.put("name", r.getRequirementName());
+            curr.put("filter", r.getFilter());
+            curr.put("namespace", r.getNamespace());
+            curr.put("href", uri.getBaseUri().toString()
+                    .concat("requirement/" + r.getRequirementName()));
+            
+            reqList.add(curr);
+        }
 
-        return Response.ok(Status.OK).entity(p.getRequirements()).build();
+        rep.put("requirements", reqList);
+        
+        return Response.ok(Status.OK).entity(rep.toString()).build();
     }
 
     /**
