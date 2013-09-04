@@ -169,7 +169,6 @@ public class PetalOperations {
                 n.put("groups", groupList);
             }
 
-            System.out.println(n.toString());
             return Response.ok(Status.OK).entity(n.toString()).build();
         } catch (NoEntityFoundException e) {
             return Response.status(Status.NOT_FOUND).entity(
