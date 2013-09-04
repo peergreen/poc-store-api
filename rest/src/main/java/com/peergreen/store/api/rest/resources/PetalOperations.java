@@ -55,17 +55,21 @@ public class PetalOperations {
      * @throws JSONException 
      */
     @GET
-    @Path("/{vendor}/{artifactId}/{version}/metadata")
-    // TODO: change to id
+    @Path("/{id}/metadata")
     public Response getPetalMetadata (
             @Context UriInfo uri,
-            @PathParam(value = "vendor") String name,
-            @PathParam(value = "artifactId") String artifactId,
-            @PathParam(value = "version") String version) throws JSONException {
+            @PathParam(value = "id") int id) throws JSONException {
+
+        Petal p = petalController.getPetalById(id);
+        if (p == null) {
+            return Response.ok(Status.NOT_FOUND).build();
+        }
 
         try {
-            Map<String, Object> mapResult = petalController
-                    .getPetalMetadata(name, artifactId, version);
+            Map<String, Object> mapResult = petalController.getPetalMetadata(
+                    p.getVendor().getVendorName(),
+                    p.getArtifactId(),
+                    p.getVersion());
 
             JSONObject n = new JSONObject();
             n.put("vendor", mapResult.get("vendor"));
@@ -206,7 +210,6 @@ public class PetalOperations {
      * @return HTTP status code 200 if the deletion has been made, or 404 if not
      * because the petal doesn't exist.
      */
-    // TODO: change to id
     @DELETE
     @Path("/local/{vendorName}/{artifactId}/{version}")
     public Response deletePetal (
@@ -232,26 +235,31 @@ public class PetalOperations {
      * or 404 if not because the petal doesn't exist.
      * @throws JSONException
      */
-    // TODO: change to id
     @GET
-    @Path("/{vendorName}/{artifactId}/{version}/desc")
+    @Path("/{id}/desc")
     public Response getDescription ( 
-            @PathParam(value = "vendorName") String vendorName,
-            @PathParam(value = "artifactId") String artifactId,
-            @PathParam(value = "version") String version) throws JSONException {
+            @PathParam(value = "id") int id) throws JSONException {
+
+        Petal p = petalController.getPetalById(id);
+        if (p == null) {
+            return Response.ok(Status.NOT_FOUND).build();
+        }
 
         Map<String, Object> result ;
         JSONObject resultJson = new JSONObject(); 
         try {
-            result = petalController.
-                    getPetalMetadata(vendorName, artifactId, version);
+            result = petalController.getPetalMetadata(
+                    p.getVendor().getVendorName(),
+                    p.getArtifactId(),
+                    p.getVersion());
 
             if (result.size() == 0) {
                 return Response.status(Status.NOT_FOUND).build();
             }
 
             resultJson.put("Description", result.get("description"));
-            return Response.status(Status.OK).entity(resultJson.toString()).build();
+            return Response.status(Status.OK)
+                    .entity(resultJson.toString()).build();
         } catch (NoEntityFoundException e) {
             return Response.status(Status.NOT_FOUND).build();
         }
@@ -266,19 +274,23 @@ public class PetalOperations {
      * or 404 if not because the petal doesn't exist.
      * @throws JSONException
      */
-    // TODO: change to id
     @GET
-    @Path("/local/{vendorName}/{artifactId}/{version}/category")
-    public Response getCategoryLocal ( 
-            @PathParam(value = "vendorName") String vendorName,
-            @PathParam(value = "artifactId") String artifactId,
-            @PathParam(value = "version") String version) throws JSONException {
+    @Path("/local/{id}/category")
+    public Response getCategoryLocal (@PathParam(value = "id") int id)
+            throws JSONException {
+
+        Petal p = petalController.getPetalById(id);
+        if (p == null) {
+            return Response.ok(Status.NOT_FOUND).build();
+        }
 
         Map<String, Object> result ;
         JSONObject resultJson = new JSONObject(); 
         try {
-            result = petalController.
-                    getPetalMetadata(vendorName, artifactId, version);
+            result = petalController.getPetalMetadata(
+                    p.getVendor().getVendorName(),
+                    p.getArtifactId(),
+                    p.getVersion());
 
             if (result.size() == 0) {
                 return Response.status(Status.NOT_FOUND).build();
@@ -304,19 +316,23 @@ public class PetalOperations {
      * or 404 if not because the petal doesn't exist.
      * @throws JSONException
      */
-    // TODO: change to id
     @GET
-    @Path("/staging/{vendorName}/{artifactId}/{version}/category")
-    public Response getCategoryStaging ( 
-            @PathParam(value = "vendorName") String vendorName,
-            @PathParam(value = "artifactId") String artifactId,
-            @PathParam(value = "version") String version) throws JSONException {
+    @Path("/staging/{id}/category")
+    public Response getCategoryStaging (@PathParam(value = "id") int id)
+            throws JSONException {
+
+        Petal p = petalController.getPetalById(id);
+        if (p == null) {
+            return Response.ok(Status.NOT_FOUND).build();
+        }
 
         Map<String, Object> result ;
         JSONObject resultJson = new JSONObject(); 
         try {
-            result = petalController.
-                    getPetalMetadata(vendorName, artifactId, version);
+            result = petalController.getPetalMetadata(
+                    p.getVendor().getVendorName(),
+                    p.getArtifactId(),
+                    p.getVersion());
 
             if (result.size() == 0) {
                 return Response.status(Status.NOT_FOUND).build();
@@ -349,7 +365,7 @@ public class PetalOperations {
      */
     // TODO: change to id
     @PUT
-    @Path("/local/{vendorName}/{artifactId}/{version}")
+    @Path("/local/{id}")
     public Response updatePetalLocal(
             String payload,
             @PathParam(value = "vendorName") String vendorName,
@@ -424,22 +440,44 @@ public class PetalOperations {
      * @param artifactId petal's artifactId
      * @param version petal's version
      * @return associated capabilities
+     * @throws JSONException
      */
-    // TODO: change to id
     @GET
-    @Path("/{vendorName}/{artifactId}/{version}/capabilities")
+    @Path("/{id}/capabilities")
     public Response getCapabilities(
-            @PathParam(value = "vendorName") String vendorName,
-            @PathParam(value = "artifactId") String artifactId,
-            @PathParam(value = "version") String version) {
+            @Context UriInfo uri,
+            @PathParam(value = "id") int id) throws JSONException {
 
-        Petal p = petalController.getPetal(vendorName, artifactId, version);
+        Petal p = petalController.getPetalById(id);
 
         if (p == null) {
             return Response.ok(Status.NOT_FOUND).build();
         }
 
-        return Response.ok(Status.OK).entity(p.getCapabilities()).build();
+        // Capabilities
+        JSONObject capJson = new JSONObject();
+        if (p.getCapabilities() != null){
+            Collection<Capability> capabilities = p.getCapabilities();
+
+            ArrayList<JSONObject> capList = new ArrayList<>();
+            Iterator<Capability> capIt = capabilities.iterator();
+            while (capIt.hasNext()) {
+                Capability c = capIt.next();
+
+                JSONObject obj = new JSONObject();
+                obj.put("id", c.getCapabilityId());
+                obj.put("name", c.getCapabilityName());
+                obj.put("namespace", c.getVersion());
+                obj.put("namespace", c.getNamespace());
+                obj.put("href", uri.getBaseUri().toString()
+                        .concat("capabilities/" + c.getCapabilityId()));
+                capList.add(obj);
+            }
+
+            capJson.put("capabilities", capList);
+        }
+
+        return Response.ok(Status.OK).entity(capJson.toString()).build();
     }
 
     /**
