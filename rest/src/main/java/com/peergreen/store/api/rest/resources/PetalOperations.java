@@ -2,7 +2,9 @@ package com.peergreen.store.api.rest.resources;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -28,9 +30,11 @@ import com.peergreen.store.controller.util.DependencyRequest;
 import com.peergreen.store.controller.util.DependencyResult;
 import com.peergreen.store.db.client.ejb.entity.Capability;
 import com.peergreen.store.db.client.ejb.entity.Category;
+import com.peergreen.store.db.client.ejb.entity.Group;
 import com.peergreen.store.db.client.ejb.entity.Petal;
 import com.peergreen.store.db.client.ejb.entity.Requirement;
 import com.peergreen.store.db.client.ejb.entity.Vendor;
+import com.peergreen.store.db.client.enumeration.Origin;
 import com.peergreen.store.db.client.exception.EntityAlreadyExistsException;
 import com.peergreen.store.db.client.exception.NoEntityFoundException;
 
@@ -69,27 +73,97 @@ public class PetalOperations {
             n.put("version", mapResult.get("version"));
             n.put("description", mapResult.get("description"));
 
+            // Category
             Category category = (Category)mapResult.get("category");
             String catName = category.getCategoryName();
-            
+
             JSONObject cat = new JSONObject();
             cat.put("categoryName", catName);
             cat.put("href", uri.getBaseUri().toString()
-                    .concat("category/"+catName));
-            
+                    .concat("categories/"+catName));
+
             n.put("category", cat.toString());
 
-            // TODO: change link to flat representation
+            // Requirements
+            if(mapResult.get("requirements") instanceof Collection<?>){
+                @SuppressWarnings("unchecked")
+                Collection<Requirement> reqs =
+                (Collection<Requirement>) mapResult.get("requirements") ;
 
-            //            if(mapResult.get("requirements")
-            //                    instanceof Collection<?>){
-            //                @SuppressWarnings("unchecked")
-            //                Collection<Requirement> reqs =
-            //                        (Collection<Requirement>) mapResult.get("requirements") ;
-            //                        JSONObject reqsJson = new JSONObject();
-            //            Iterator<Requirement> reqIt = reqs.iterator();
-            //            
-            //            }
+                ArrayList<JSONObject> reqList = new ArrayList<>();
+                Iterator<Requirement> reqIt = reqs.iterator();
+                while (reqIt.hasNext()) {
+                    Requirement r = reqIt.next();
+
+                    JSONObject obj = new JSONObject();
+                    obj.put("id", r.getRequirementId());
+                    obj.put("name", r.getRequirementName());
+                    obj.put("filter", r.getFilter());
+                    obj.put("namespace", r.getNamespace());
+                    obj.put("href", uri.getBaseUri().toString()
+                            .concat("requirement/" + r.getRequirementId()));
+                    reqList.add(obj);
+                }
+
+                n.put("requirements", reqList);
+            }
+
+            // Capabilities
+            if(mapResult.get("capabilities") instanceof Collection<?>){
+                @SuppressWarnings("unchecked")
+                Collection<Capability> capabilities =
+                (Collection<Capability>) mapResult.get("capabilities") ;
+
+                ArrayList<JSONObject> capList = new ArrayList<>();
+                Iterator<Capability> capIt = capabilities.iterator();
+                while (capIt.hasNext()) {
+                    Capability c = capIt.next();
+
+                    JSONObject obj = new JSONObject();
+                    obj.put("id", c.getCapabilityId());
+                    obj.put("name", c.getCapabilityName());
+                    obj.put("namespace", c.getVersion());
+                    obj.put("namespace", c.getNamespace());
+                    obj.put("href", uri.getBaseUri().toString()
+                            .concat("capabilities/" + c.getCapabilityId()));
+                    capList.add(obj);
+                }
+
+                n.put("capabilities", capList);
+            }
+
+            // Origin
+            Origin origin = (Origin) mapResult.get("origin");
+            if (origin != null) {
+                if (origin.equals(Origin.LOCAL)) {
+                    n.put("Origin", "local");
+                } else if (origin.equals(Origin.STAGING)) {
+                    n.put("Origin", "staging");
+                } else if (origin.equals(Origin.REMOTE)) {
+                    n.put("Origin", "remote");
+                }
+            }
+
+            // Groups
+            if(mapResult.get("groups") instanceof Collection<?>){
+                @SuppressWarnings("unchecked")
+                Collection<Group> groups =
+                (Collection<Group>) mapResult.get("groups") ;
+
+                ArrayList<JSONObject> groupList = new ArrayList<>();
+                Iterator<Group> groupIt = groups.iterator();
+                while (groupIt.hasNext()) {
+                    Group g = groupIt.next();
+
+                    JSONObject obj = new JSONObject();
+                    obj.put("name", g.getGroupname());
+                    obj.put("href", uri.getBaseUri().toString()
+                            .concat("group/" + g.getGroupname()));
+                    groupList.add(obj);
+                }
+
+                n.put("groups", groupList);
+            }
 
             System.out.println(n.toString());
             return Response.ok(Status.OK).entity(n.toString()).build();
@@ -102,10 +176,11 @@ public class PetalOperations {
     /**
      * Add a petal to the local repository.
      */
+    // TODO: write a client => dependency to Jersey?
     @POST
     @Path("/local")
     @Consumes("*/*")
-    public Response uploadPetal (String payload, InputStream stream ) {
+    public Response uploadPetal (String payload, InputStream stream) {
         /*
          * payload:
         String vendorName
