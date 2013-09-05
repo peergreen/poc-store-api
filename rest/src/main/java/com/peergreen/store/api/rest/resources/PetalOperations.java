@@ -535,9 +535,9 @@ public class PetalOperations {
         if (p == null) {
             return Response.ok(Status.NOT_FOUND).build();
         }
-        
+
         JSONObject rep = new JSONObject();
-        
+
         List<JSONObject> reqList = new ArrayList<>();
         Collection<Requirement> reqs = p.getRequirements();
         Iterator<Requirement> itReq = reqs.iterator();
@@ -549,12 +549,12 @@ public class PetalOperations {
             curr.put("namespace", r.getNamespace());
             curr.put("href", uri.getBaseUri().toString()
                     .concat("requirement/" + r.getRequirementName()));
-            
+
             reqList.add(curr);
         }
 
         rep.put("requirements", reqList);
-        
+
         return Response.ok(Status.OK).entity(rep.toString()).build();
     }
 
@@ -597,26 +597,36 @@ public class PetalOperations {
     }
 
     /**
-     * Method to retrieve a petal from the local store.
+     * Method to retrieve a petal from the local store.<br />
+     * Return codes:
+     * <ul>
+     *      <li>200 if petal found</li>
+     *      <li>200 if petal not found</li>
+     * </ul>
      *
-     * @param vendor petal's vendor
-     * @param artifactId petal's artifactId
-     * @param version petal's version
+     * @param id petal's id
      * @return {@link Response} response containing URL to the petal
      */
-    // TODO: change to id
     @GET
-    @Path("/local/{vendor}/{artifactId}/{version}")
+    @Path("/local/{id}")
     public Response getPetalFromLocal(
-            @PathParam(value = "vendor") String vendor,
-            @PathParam(value = "artifactId") String artifactId,
-            @PathParam(value = "version") String version) throws Exception {
+            @PathParam(value = "id") int id) throws Exception {
+
+        Petal p = petalController.getPetalById(id);
+
+        if (p == null) {
+            return Response.ok(Status.NOT_FOUND).build();
+        }
 
         File petal = storeManagement.getPetalFromLocal(
-                vendor, artifactId, version);
+                p.getVendor().getVendorName(),
+                p.getArtifactId(),
+                p.getVersion());
+
         ResponseBuilder response = Response.ok(petal);
         response.header("Content-Disposition",
-                "attachment; filename="+artifactId+"."+version+".jar");
+                "attachment; filename=" + p.getArtifactId() + "."
+                        + p.getVersion() + ".jar");
         return response.status(Status.OK).build();
     }
 
@@ -656,20 +666,26 @@ public class PetalOperations {
     public Response getPetals(@Context UriInfo uri) throws JSONException
     {
         Collection<Petal> petals = storeManagement.collectPetals();
-        /*
         Iterator<Petal> it = petals.iterator();
 
-        JSONObject jsonObject = new JSONObject();
+        List<JSONObject> petalsList = new ArrayList<>();
         while(it.hasNext()) {
+            JSONObject jsonObject = new JSONObject();
             Petal p = it.next();
-            String vendorName = p.getVendor().getVendorName();
-            jsonObject.put(p.getArtifactId() , uri.getAbsolutePath().toString()
-                    .concat("/" + vendorName + "/" +
-                            p.getArtifactId() + "/" + p.getVersion()));
-
+            jsonObject.put("id", p.getPid());
+            jsonObject.put("vendorName", p.getVendor().getVendorName());
+            jsonObject.put("artifactId", p.getArtifactId());
+            jsonObject.put("version", p.getVersion());
+            jsonObject.put("href" , uri.getAbsolutePath().toString()
+                    .concat("local/" + p.getPid()));
+            
+            petalsList.add(jsonObject);
         }
-         */
-        return Response.status(Status.OK).entity(petals).build();
+        
+        JSONObject res = new JSONObject();
+        res.put("petals", petalsList);
+        
+        return Response.status(Status.OK).entity(res.toString()).build();
     }
 
     /**
@@ -794,15 +810,15 @@ public class PetalOperations {
     public Response validatePetal(
             @Context UriInfo uri,
             @PathParam(value = "id") int id) {
-        
+
         try {
             Petal p = petalController.getPetalById(id);
-            
+
             p = storeManagement.validatePetal(
                     p.getVendor().getVendorName(),
                     p.getArtifactId(),
                     p.getVersion());
-            
+
             return Response.ok(Status.OK).entity(p).build();
         } catch (NoEntityFoundException e) {
             // TODO Auto-generated catch block
