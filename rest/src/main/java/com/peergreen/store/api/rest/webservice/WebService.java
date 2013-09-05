@@ -7,7 +7,7 @@ import javax.ws.rs.core.Application;
 
 import org.apache.felix.ipojo.annotations.Bind;
 import org.apache.felix.ipojo.annotations.Component;
-import org.apache.felix.ipojo.annotations.Instantiate;
+import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.StaticServiceProperty;
 
@@ -27,13 +27,14 @@ import com.peergreen.store.controller.IUserController;
 
 
 @Component
-@Instantiate
 @Provides(specifications=Application.class, properties=
 @StaticServiceProperty(name="jonas.jaxrs.context-path",
 type="java.lang.String",
 value="/apistore"))
 public class WebService extends Application {
 
+    @Property
+    private String tmpPath;
     private IStoreManagment storeManagment;
     private IUserController userController;
     private IGroupController groupController;
