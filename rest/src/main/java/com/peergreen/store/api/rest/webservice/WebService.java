@@ -43,34 +43,9 @@ public class WebService extends Application {
     public WebService() {
 
     }
-    @Bind
-    public void bindStoreManagement (IStoreManagment sManagment){
-        System.out.println("StoreManagement appears");
-        storeManagment = sManagment;
-    }
-    
-    @Bind
-    public void bindUserController(IUserController uController){
-        System.out.println("UserController appears");
-        userController = uController;
-    }
-    
-    @Bind
-    public void bindGroupController(IGroupController gController){
-        System.out.println("GroupController appears");
-        groupController = gController;
-    }
-    
-    @Bind
-    public void bindPetalController(IPetalController pController){
-        System.out.println("PetalController appears");
-        petalController = pController;
-    }
-    
 
     @Override
     public Set<Object> getSingletons() {
-
         Set<Object> s = new HashSet<Object>();
         CapabilityOperations capOp = new CapabilityOperations();
         CategoryOperations catOp = new CategoryOperations();
@@ -106,4 +81,29 @@ public class WebService extends Application {
         capOp.setPetalController(petalController);
         return s;
     }
+
+    @Bind
+    public void bindStoreManagement (IStoreManagment sManagment){
+        System.out.println("StoreManagement appears");
+        storeManagment = sManagment;
+    }
+
+    @Bind
+    public void bindUserController(IUserController uController){
+        System.out.println("UserController appears");
+        userController = uController;
+    }
+
+    @Bind
+    public void bindGroupController(IGroupController gController){
+        System.out.println("GroupController appears");
+        groupController = gController;
+    }
+
+    @Bind
+    public void bindPetalController(IPetalController pController){
+        System.out.println("PetalController appears");
+        petalController = pController;
+    }
+
 }
