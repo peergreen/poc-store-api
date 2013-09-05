@@ -456,7 +456,7 @@ public class PetalOperations {
             rep.put("href", uri.getBaseUri().toString()
                     .concat("petal/" + p.getPid() + "/metadata"));
 
-            return Response.status(Status.OK).entity(p).build();
+            return Response.status(Status.OK).entity(rep.toString()).build();
         } catch (NoEntityFoundException e) {
             return Response.status(Status.NOT_FOUND).build();
         }
@@ -748,7 +748,7 @@ public class PetalOperations {
      * @return petal instance created in database
      */
     @POST
-    @Path(value = "/staging")
+    @Path(value = "/submit")
     //TODO add @Consumes directive for binary
     public Response submitPetal(
             String vendorName,
@@ -790,15 +790,19 @@ public class PetalOperations {
      * @return The validated petal 
      */
     @PUT
-    @Path(value = "/staging/{id}")
+    @Path(value = "/{id}/validate")
     public Response validatePetal(
-            @PathParam(value = "artifactId") String artifactId,
-            @PathParam(value = "version") String version,
-            @PathParam(value = "vendorName") String vendorName,
-            @Context UriInfo uri) {
+            @Context UriInfo uri,
+            @PathParam(value = "id") int id) {
+        
         try {
-            Petal p = storeManagement.validatePetal(
-                    vendorName, artifactId, version);
+            Petal p = petalController.getPetalById(id);
+            
+            p = storeManagement.validatePetal(
+                    p.getVendor().getVendorName(),
+                    p.getArtifactId(),
+                    p.getVersion());
+            
             return Response.ok(Status.OK).entity(p).build();
         } catch (NoEntityFoundException e) {
             // TODO Auto-generated catch block
