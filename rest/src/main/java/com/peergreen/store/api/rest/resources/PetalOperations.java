@@ -21,7 +21,9 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
@@ -65,6 +67,7 @@ public class PetalOperations {
      * @throws JSONException 
      */
     @GET
+    @Produces(MediaType.APPLICATION_JSON)
     @Path("{id}/metadata")
     public Response getPetalMetadata (
             @Context UriInfo uri,
@@ -95,7 +98,7 @@ public class PetalOperations {
             JSONObject cat = new JSONObject();
             cat.put("categoryName", catName);
             cat.put("href", uri.getBaseUri().toString()
-                    .concat("categories/"+catName));
+                    .concat("category/"+catName));
 
             n.put("category", cat.toString());
 
@@ -140,7 +143,9 @@ public class PetalOperations {
                     obj.put("namespace", c.getVersion());
                     obj.put("namespace", c.getNamespace());
                     obj.put("href", uri.getBaseUri().toString()
-                            .concat("capabilities/" + c.getCapabilityId()));
+                            .concat("capability/"
+                                    + c.getCapabilityName() + "/"
+                                    + c.getVersion() + "/petals"));
                     capList.add(obj);
                 }
 
@@ -251,6 +256,7 @@ public class PetalOperations {
      */
     @GET
     @Path("/{id}/desc")
+    @Produces(MediaType.APPLICATION_JSON)
     public Response getDescription ( 
             @PathParam(value = "id") int id) throws JSONException {
 
@@ -289,6 +295,7 @@ public class PetalOperations {
      * @throws JSONException
      */
     @GET
+    @Produces(MediaType.APPLICATION_JSON)
     @Path("/local/{id}/category")
     public Response getCategoryLocal (@PathParam(value = "id") int id)
             throws JSONException {
@@ -331,6 +338,7 @@ public class PetalOperations {
      * @throws JSONException
      */
     @GET
+    @Produces(MediaType.APPLICATION_JSON)
     @Path("/staging/{id}/category")
     public Response getCategoryStaging (@PathParam(value = "id") int id)
             throws JSONException {
@@ -378,6 +386,7 @@ public class PetalOperations {
      * @throws JSONException
      */
     @PUT
+    @Produces(MediaType.APPLICATION_JSON)
     @Path("/local/{id}")
     public Response updatePetalLocal(
             String payload,
@@ -432,6 +441,7 @@ public class PetalOperations {
      * @throws JSONException
      */
     @PUT
+    @Produces(MediaType.APPLICATION_JSON)
     @Path("/staging/{id}")
     public Response updatePetalStaging(
             String payload,
@@ -484,6 +494,7 @@ public class PetalOperations {
      * @throws JSONException
      */
     @GET
+    @Produces(MediaType.APPLICATION_JSON)
     @Path("/{id}/capabilities")
     public Response getCapabilities(
             @Context UriInfo uri,
@@ -534,6 +545,7 @@ public class PetalOperations {
      * @throws JSONException
      */
     @GET
+    @Produces(MediaType.APPLICATION_JSON)
     @Path("/{id}/requirements")
     public Response getRequirements(
             @Context UriInfo uri,
@@ -575,6 +587,9 @@ public class PetalOperations {
      * @throws NoEntityFoundException 
      * @see DependencyRequest
      */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/local/{id}/dependencies")
     public Response getTransitiveDependencies(
             @PathParam(value = "vendorName") String vendorName,
             @PathParam(value = "artifactId") String artifactId,
@@ -671,6 +686,7 @@ public class PetalOperations {
      * @throws JSONException
      */
     @GET
+    @Produces(MediaType.APPLICATION_JSON)
     public Response getPetals(@Context UriInfo uri) throws JSONException
     {
         Collection<Petal> petals = storeManagement.collectPetals();
@@ -697,102 +713,6 @@ public class PetalOperations {
     }
 
     /**
-     * Retrieve all the petals from the local repository.
-     *
-     * @return A collection of petals existing in the local repository
-     * @throws JSONException
-     */
-    @GET
-    @Path("/local")
-    public Response getLocalPetals(@Context UriInfo uri) throws JSONException {
-        Collection<Petal> petals = storeManagement.collectPetalsFromLocal();
-        Iterator<Petal> it = petals.iterator();
-
-        List<JSONObject> petalsList = new ArrayList<>();
-        while(it.hasNext()) {
-            JSONObject jsonObject = new JSONObject();
-            Petal p = it.next();
-            jsonObject.put("id", p.getPid());
-            jsonObject.put("vendorName", p.getVendor().getVendorName());
-            jsonObject.put("artifactId", p.getArtifactId());
-            jsonObject.put("version", p.getVersion());
-            jsonObject.put("href" , uri.getAbsolutePath().toString()
-                    .concat("local/" + p.getPid()));
-
-            petalsList.add(jsonObject);
-        }
-
-        JSONObject res = new JSONObject();
-        res.put("petals", petalsList);
-
-        return Response.status(Status.OK).entity(res.toString()).build();
-    }
-
-    /**
-     * Retrieve all the petals from the staging repository.
-     *
-     * @return A collection of petals existing in the staging repository
-     * @throws JSONException
-     */
-    @GET
-    @Path("/staging")
-    public Response getStagingPetals(@Context UriInfo uri) throws JSONException {
-        Collection<Petal> petals = storeManagement.collectPetalsFromStaging();
-        Iterator<Petal> it = petals.iterator();
-
-        List<JSONObject> petalsList = new ArrayList<>();
-        while(it.hasNext()) {
-            JSONObject jsonObject = new JSONObject();
-            Petal p = it.next();
-            jsonObject.put("id", p.getPid());
-            jsonObject.put("vendorName", p.getVendor().getVendorName());
-            jsonObject.put("artifactId", p.getArtifactId());
-            jsonObject.put("version", p.getVersion());
-            jsonObject.put("href" , uri.getAbsolutePath().toString()
-                    .concat("staging/" + p.getPid()));
-
-            petalsList.add(jsonObject);
-        }
-
-        JSONObject res = new JSONObject();
-        res.put("petals", petalsList);
-
-        return Response.status(Status.OK).entity(res.toString()).build();
-    }
-
-    /**
-     * Retrieve all the petals from the remote repository.
-     *
-     * @return A collection of petals existing in the remote repository
-     * @throws JSONException
-     */
-    @GET
-    @Path("/remote")
-    public Response getRemotePetals(@Context UriInfo uri) throws JSONException {
-        Collection<Petal> petals = storeManagement.collectPetals();
-        Iterator<Petal> it = petals.iterator();
-
-        List<JSONObject> petalsList = new ArrayList<>();
-        while(it.hasNext()) {
-            JSONObject jsonObject = new JSONObject();
-            Petal p = it.next();
-            jsonObject.put("id", p.getPid());
-            jsonObject.put("vendorName", p.getVendor().getVendorName());
-            jsonObject.put("artifactId", p.getArtifactId());
-            jsonObject.put("version", p.getVersion());
-            jsonObject.put("href" , uri.getAbsolutePath().toString()
-                    .concat("remote/" + p.getPid()));
-
-            petalsList.add(jsonObject);
-        }
-
-        JSONObject res = new JSONObject();
-        res.put("petals", petalsList);
-
-        return Response.status(Status.OK).entity(res.toString()).build();
-    }
-
-    /**
      * Method to submit a petal to validate and add to the store.
      *
      * @param vendor petal vendor
@@ -807,8 +727,9 @@ public class PetalOperations {
      * @throws JSONException
      */
     @POST
-    @Path(value = "/submit")
+    @Path("/submit")
     @Consumes("*/*")
+    @Produces(MediaType.APPLICATION_JSON)
     public Response submitPetal(
             @Context UriInfo uri,
             String payload,
@@ -830,13 +751,13 @@ public class PetalOperations {
         try {
             File stagingFile = new File(tmpPath + "/" + vendorName + ":"
                     + artifactId + ":" + version + ".jar");
-            
+
             try (FileOutputStream fos = new FileOutputStream(stagingFile)) {
                 BufferedInputStream bis = new BufferedInputStream(is);
 
                 // Buffer size => 1kB
                 byte[] buffer = new byte[1024];
-                
+
                 // Keep reading until there is no more content left.
                 // -1 (EOF) is returned when end of file is reached.
                 while ((bis.read(buffer)) != -1) {
@@ -844,8 +765,8 @@ public class PetalOperations {
                 }
             } catch (FileNotFoundException e) {
                 logger.error("Couldn't create temporary file." +
-                		" Please check write permission for folder" +
-                		" specified in config file.", e);
+                        " Please check write permission for folder" +
+                        " specified in config file.", e);
                 return Response.ok(Status.INTERNAL_SERVER_ERROR).build();
             } catch (IOException e) {
                 logger.error("Error during file storing on system.", e);
@@ -889,7 +810,8 @@ public class PetalOperations {
      * @throws JSONException 
      */
     @PUT
-    @Path(value = "/{id}/validate")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/{id}/validate")
     public Response validatePetal(
             @Context UriInfo uri,
             @PathParam(value = "id") int id) throws JSONException {

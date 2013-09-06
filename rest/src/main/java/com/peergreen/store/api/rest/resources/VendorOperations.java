@@ -1,5 +1,6 @@
 package com.peergreen.store.api.rest.resources;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -8,7 +9,9 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response.Status;
@@ -23,7 +26,7 @@ import com.peergreen.store.db.client.ejb.entity.Vendor;
 import com.peergreen.store.db.client.exception.EntityAlreadyExistsException;
 import com.peergreen.store.db.client.exception.NoEntityFoundException;
 
-@Path(value="/vendors")
+@Path(value="/vendor")
 public class VendorOperations {
 
     private IStoreManagment storeManagment;
@@ -79,12 +82,14 @@ public class VendorOperations {
     }
 
     /**
-     * Retrieve all the petals provided by a vendor s
+     * Retrieve all the petals provided by a vendor.
+     *
      * @param name The vendor's name 
      * @return All the petals provided by a vendor 
      * @throws JSONException 
      */
     @GET
+    @Produces(MediaType.APPLICATION_JSON)
     @Path("/{name}/petals")
     public Response getPetals(@Context UriInfo uri  ,
             @PathParam("name") String name ) throws JSONException{
@@ -102,14 +107,16 @@ public class VendorOperations {
                     p = it.next();
 
                     result.put(p.getArtifactId(), path.concat("petal/" 
-                            + p.getVendor() + "/" + p.getArtifactId()
-                            + "/" + p.getVersion()));              
+                            + p.getVendor().getVendorName() + "/"
+                            + p.getArtifactId() + "/"
+                            + p.getVersion() + "/metadata"));              
                 }
                 return Response.status(Status.OK).entity(
                         result.toString()).build();
             } else {
-                return Response.status(Status.OK).entity(
-                        "No petals for " + name)
+                return Response.status(Status.OK)
+                        .entity(new JSONObject()
+                        .put("petals", new ArrayList<>()))
                         .build();
             }
         } catch (NoEntityFoundException e) {
@@ -151,5 +158,5 @@ public class VendorOperations {
     public void setPetalController(IPetalController petalController) {
         this.petalController = petalController;
     }
-    
+
 }

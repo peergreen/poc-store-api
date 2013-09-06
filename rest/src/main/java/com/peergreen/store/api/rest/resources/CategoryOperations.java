@@ -90,6 +90,7 @@ public class CategoryOperations {
      * @throws JSONException 
      */
     @GET
+    @Produces(MediaType.APPLICATION_JSON)
     @Path("{name}")
     public Response showCategory(
             @Context UriInfo uri,

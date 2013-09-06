@@ -3,6 +3,7 @@ package com.peergreen.store.api.rest.resources;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -20,6 +21,7 @@ import com.peergreen.store.controller.IPetalController;
 import com.peergreen.store.controller.IStoreManagment;
 import com.peergreen.store.db.client.ejb.entity.Category;
 import com.peergreen.store.db.client.ejb.entity.Group;
+import com.peergreen.store.db.client.ejb.entity.Petal;
 import com.peergreen.store.db.client.ejb.entity.User;
 import com.peergreen.store.db.client.ejb.entity.Vendor;
 
@@ -29,7 +31,7 @@ import com.peergreen.store.db.client.ejb.entity.Vendor;
 @Path("/")
 public class GetOperations {
 
-    private IStoreManagment storeManagment;
+    private IStoreManagment storeManagement;
     private IPetalController petalController;
 
     /**
@@ -43,7 +45,7 @@ public class GetOperations {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("users")
     public Response getUsers(@Context UriInfo uri) throws JSONException {
-        Collection<User> users = storeManagment.collectUsers();
+        Collection<User> users = storeManagement.collectUsers();
 
         ArrayList<JSONObject> usersList = new ArrayList<>();
         Iterator<User> userIt = users.iterator();
@@ -74,7 +76,7 @@ public class GetOperations {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("groups")
     public Response getGroups(@Context UriInfo uri) throws JSONException {
-        Collection<Group> groups = storeManagment.collectGroups();
+        Collection<Group> groups = storeManagement.collectGroups();
 
         ArrayList<JSONObject> groupsList = new ArrayList<>();
         Iterator<Group> groupIt = groups.iterator();
@@ -136,7 +138,7 @@ public class GetOperations {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("categories")
     public Response getCategories(@Context UriInfo uri) throws JSONException {
-        Collection<Category> cats = storeManagment.collectCategories();
+        Collection<Category> cats = storeManagement.collectCategories();
 
         ArrayList<JSONObject> catList = new ArrayList<>();
         Iterator<Category> catIt = cats.iterator();
@@ -162,7 +164,7 @@ public class GetOperations {
      * @param storeManagement the storeManagement to set
      */
     public void setStoreManagment(IStoreManagment storeManagment) {
-        this.storeManagment = storeManagment;
+        this.storeManagement = storeManagment;
     }
 
     /**
@@ -173,5 +175,104 @@ public class GetOperations {
     public void setPetalController(IPetalController petalController) {
         this.petalController = petalController;
     }
+    
+    /**
+     * Retrieve all the petals from the local repository.
+     *
+     * @return A collection of petals existing in the local repository
+     * @throws JSONException
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/petals/local")
+    public Response getLocalPetals(@Context UriInfo uri) throws JSONException {
+        Collection<Petal> petals = storeManagement.collectPetalsFromLocal();
+        Iterator<Petal> it = petals.iterator();
 
+        List<JSONObject> petalsList = new ArrayList<>();
+        while(it.hasNext()) {
+            JSONObject jsonObject = new JSONObject();
+            Petal p = it.next();
+            jsonObject.put("id", p.getPid());
+            jsonObject.put("vendorName", p.getVendor().getVendorName());
+            jsonObject.put("artifactId", p.getArtifactId());
+            jsonObject.put("version", p.getVersion());
+            jsonObject.put("href" , uri.getBaseUri().toString()
+                    .concat("petal/" + p.getPid() + "/metadata"));
+
+            petalsList.add(jsonObject);
+        }
+
+        JSONObject res = new JSONObject();
+        res.put("petals", petalsList);
+
+        return Response.status(Status.OK).entity(res.toString()).build();
+    }
+
+    /**
+     * Retrieve all the petals from the staging repository.
+     *
+     * @return A collection of petals existing in the staging repository
+     * @throws JSONException
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/petals/staging")
+    public Response getStagingPetals(@Context UriInfo uri) throws JSONException {
+        Collection<Petal> petals = storeManagement.collectPetalsFromStaging();
+        Iterator<Petal> it = petals.iterator();
+
+        List<JSONObject> petalsList = new ArrayList<>();
+        while(it.hasNext()) {
+            JSONObject jsonObject = new JSONObject();
+            Petal p = it.next();
+            jsonObject.put("id", p.getPid());
+            jsonObject.put("vendorName", p.getVendor().getVendorName());
+            jsonObject.put("artifactId", p.getArtifactId());
+            jsonObject.put("version", p.getVersion());
+            jsonObject.put("href" , uri.getBaseUri().toString()
+                    .concat("petal/" + p.getPid() + "/metadata"));
+
+            petalsList.add(jsonObject);
+        }
+
+        JSONObject res = new JSONObject();
+        res.put("petals", petalsList);
+
+        return Response.status(Status.OK).entity(res.toString()).build();
+    }
+
+    /**
+     * Retrieve all the petals from the remote repository.
+     *
+     * @return A collection of petals existing in the remote repository
+     * @throws JSONException
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/petals/remote")
+    public Response getRemotePetals(@Context UriInfo uri) throws JSONException {
+        Collection<Petal> petals = storeManagement.collectPetals();
+        Iterator<Petal> it = petals.iterator();
+
+        List<JSONObject> petalsList = new ArrayList<>();
+        while(it.hasNext()) {
+            JSONObject jsonObject = new JSONObject();
+            Petal p = it.next();
+            jsonObject.put("id", p.getPid());
+            jsonObject.put("vendorName", p.getVendor().getVendorName());
+            jsonObject.put("artifactId", p.getArtifactId());
+            jsonObject.put("version", p.getVersion());
+            jsonObject.put("href" , uri.getBaseUri().toString()
+                    .concat("petal/" + p.getPid() + "/metadata"));
+
+            petalsList.add(jsonObject);
+        }
+
+        JSONObject res = new JSONObject();
+        res.put("petals", petalsList);
+
+        return Response.status(Status.OK).entity(res.toString()).build();
+    }
+    
 }

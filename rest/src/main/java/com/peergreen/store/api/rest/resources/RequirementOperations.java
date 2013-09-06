@@ -6,7 +6,9 @@ import java.util.Iterator;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response.Status;
@@ -30,6 +32,7 @@ public class RequirementOperations {
      * @throws JSONException
      */
     @GET
+    @Produces(MediaType.APPLICATION_JSON)
     @Path("/{name}/petals")
     public Response getPetals(@Context UriInfo uri,
             @PathParam(value = "name") String name) throws JSONException {
@@ -46,8 +49,8 @@ public class RequirementOperations {
                 while (it.hasNext()) {
                     p = it.next();
                     result.put(p.getArtifactId(), path.concat("petal/"
-                            + p.getVendor() + "/" + p.getArtifactId()
-                            + "/" + p.getVersion()));
+                            + p.getVendor().getVendorName() + "/"
+                            + p.getArtifactId() + "/" + p.getVersion()));
                 }
                 return Response.status(Status.OK).entity(
                         result.toString()).build();
