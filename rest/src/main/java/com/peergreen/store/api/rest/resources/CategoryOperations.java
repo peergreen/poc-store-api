@@ -1,9 +1,10 @@
 package com.peergreen.store.api.rest.resources;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
-import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -11,6 +12,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
@@ -23,12 +25,12 @@ import org.ow2.util.log.LogFactory;
 
 import com.peergreen.store.controller.IStoreManagment;
 import com.peergreen.store.db.client.ejb.entity.Category;
+import com.peergreen.store.db.client.ejb.entity.Petal;
 import com.peergreen.store.db.client.exception.EntityAlreadyExistsException;
+import com.peergreen.store.db.client.exception.NoEntityFoundException;
 
 
 @Path("/category")
-@Produces("application/json")  
-@Consumes("application/json") 
 public class CategoryOperations {
 
     private static Log logger = LogFactory.getLog(PetalOperations.class);
@@ -48,6 +50,7 @@ public class CategoryOperations {
      * @return
      */
     @POST
+    @Produces(MediaType.APPLICATION_JSON)  
     public Response createCategory(@Context UriInfo uri, String payload) {
         JSONObject jsonObject;
         String name = null;
@@ -104,44 +107,52 @@ public class CategoryOperations {
     }
 
     /**
-     * Retrieve petals of a category.
+     * Retrieve petals of a category.<br/>
+     * HTTP codes returned:
+     * <ul>
+     *      <li>200 if category found</li>
+     *      <lI>404 if category cannot be found</li>
+     * </ul>
      *
+     * @param uri contextual URI
      * @param name A category's name
      * @return A collection of petals which belongs to the category
+     * @throws JSONException
      */
     @GET
+    @Produces(MediaType.APPLICATION_JSON)
     @Path("{name}/petals")
-    public Response getPetals(@PathParam("name") String name){
+    public Response getPetals(
+            @Context UriInfo uri,
+            @PathParam("name") String name) throws JSONException {
 
-        //TODO method in the controller to retrieve petals by category 
-        return null; 
-    }
-
-    /**
-     * Retrieve all existing categories.
-     *
-     * @return collection of existing categories
-     */
-    @GET
-    public Response getCategories(@Context UriInfo uri){   
-        JSONObject jsonObject = new JSONObject();
-
-        Collection<Category> categories = storeManagement.collectCategories();
-        Iterator<Category> iterator = categories.iterator();
-        Category category ; 
-        while(iterator.hasNext()){
-            category = iterator.next();
-            try {
-                jsonObject.put(
-                        category.getCategoryName(),
-                        uri.getAbsolutePath().toString()
-                        .concat("/" + category.getCategoryName()));
-            } catch (JSONException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+        Collection<Petal> petals = null;
+        try {
+            petals = storeManagement.getPetalsForCategory(name);
+        } catch (NoEntityFoundException e) {
+            logger.warn("Category with name " + name + " cannot be found.", e);
+            return Response.ok(Status.NOT_FOUND).build();
         }
-        return Response.status(Status.OK).entity(jsonObject.toString()).build();
+        
+        Iterator<Petal> iterator = petals.iterator();
+        List<JSONObject> petalsList = new ArrayList<>();
+        while(iterator.hasNext()){
+            Petal p = iterator.next();
+
+            JSONObject obj = new JSONObject();
+            obj.put("vendorName", p.getVendor().getVendorName());
+            obj.put("artifactId", p.getArtifactId());
+            obj.put("version", p.getVersion());
+            obj.put("href", uri.getBaseUri().toString()
+                    .concat("petal/" + p.getPid() + "/metadata"));
+            
+            petalsList.add(obj);
+        }
+        
+        JSONObject res = new JSONObject();
+        res.put("petals", petalsList);
+        
+        return Response.status(Status.OK).entity(res.toString()).build();
     }
 
     /**
