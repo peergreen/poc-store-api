@@ -1,107 +1,152 @@
 package com.peergreen.store.api.rest.resources;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.UriInfo;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.ow2.util.log.Log;
+import org.ow2.util.log.LogFactory;
 
 import com.peergreen.store.controller.IStoreManagment;
+import com.peergreen.store.db.client.ejb.entity.Link;
 import com.peergreen.store.db.client.exception.EntityAlreadyExistsException;
 
-@Path(value = "/links")
+@Path(value = "/link")
 public class LinkOperations {
 
     private IStoreManagment storeManagement; 
-
-    private static Logger theLogger =
-            Logger.getLogger(UserOperations.class.getName());
+    private static Log logger = LogFactory.getLog(LinkOperations.class);
 
     /**
      * Create a new link between store
-     * @param url the link's url 
-     * @param description the link's description
+     * @param uri contextual URI injected by JAX-RS
+     * @param payload HTTP request payload
      * @return the link created 
+     * @throws JSONException 
      */
     @POST
-    public Response addLink(String payload){
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response addLink(
+            @Context UriInfo uri,
+            String payload) throws JSONException {
+
         JSONObject jsonObject;
         try {
             jsonObject = new JSONObject(payload); 
             String url = jsonObject.getString("url");
             String description = jsonObject.getString("description");
-            storeManagement.addLink(url, description);
-            return Response.status(Status.CREATED).entity(
-                    "The link with thir url : " + url +
-                    " was created successfully").build();
+            Link l = storeManagement.addLink(url, description);
 
-        } catch (JSONException e) {
-            theLogger.log(Level.SEVERE,e.getMessage());
-            return null;
+            JSONObject res = new JSONObject();
+            res.put("id", l.getLinkId());
+            res.put("href", uri.getAbsolutePath().toString()
+                    .concat(Integer.toString(l.getLinkId())));
+
+            return Response.status(Status.CREATED)
+                    .entity(res.toString()).build();
+
         } catch (EntityAlreadyExistsException e) {
-            theLogger.log(Level.SEVERE,e.getMessage());
-            return null;
+            logger.warn("Link with specified URL " +
+                    "already exists in database.", e);
+            return Response.ok(Status.CONFLICT).build();
         }
     }
 
+    /**
+     * Method to remove a link to a remote store.
+     *
+     * @param id link id
+     * @return Response containing details on removed link
+     * @throws JSONException 
+     */
     @DELETE
+    @Produces(MediaType.APPLICATION_JSON)
     @Path("/{id}")
-    public Response deleteLink(@PathParam(value="id") int id){
-        //TODO how to get a link with his id 
-        //storeManagement.removeLink(linkUrl);
-        return null;
-    }
+    public Response deleteLink(@PathParam(value="id") int id) throws JSONException {
+        Link link = storeManagement.getLink(id);
 
-    @PUT
-    @Path("/{id}")
-    public Response updateLink(@PathParam(value="id") int id, String payload){
-        //        try {
-        //            JSONObject jsonObject = new JSONObject(payload);
-        //            String newDescription = jsonObject.getString("description");
-        //        } catch (JSONException e) {
-        //            // TODO Auto-generated catch block
-        //            e.printStackTrace();
-        //        }
-        //        
-        //TODO how to get a link with his id 
-        //storeManagement.removeLink(linkUrl);
+        if (link == null) {
+            return Response.ok(Status.NOT_FOUND).build();
+        }
 
-        return null;
+        storeManagement.removeLink(link.getUrl());
+
+        JSONObject result = new JSONObject();
+        result.put("id", link.getLinkId());
+        result.put("description", link.getDescription());
+        result.put("url", link.getUrl());
+
+        return Response.ok(Status.OK).entity(result.toString()).build();
     }
 
     /**
-     * Retrieve all the links existing
-     * @return A collection of links 
+     * Method to update a link (description)
+     *
+     * @param id link's id
+     * @param payload HTTP request payload (containing new description)
+     * @return Response containing details on modified link
+     * @throws JSONException 
+     */
+    @PUT
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("{id}")
+    public Response updateLink(
+            @PathParam(value="id") int id,
+            String payload) throws JSONException {
+
+        Link link = storeManagement.getLink(id);
+
+        if (link == null) {
+            return Response.ok(Status.NOT_FOUND).build();
+        }
+
+        JSONObject result = new JSONObject();
+        result.put("id", link.getLinkId());
+        result.put("description", link.getDescription());
+        result.put("url", link.getUrl());
+
+        return Response.ok(Status.OK).entity(result.toString()).build();
+    }
+
+    /**
+     * Method to retrieve a link.
+     *
+     * @param uri contextual URI injected by JAX-RS
+     * @param id link id
+     * @return JSON response containing link's details
+     * @throws JSONException 
      */
     @GET
-    public Response getLinks(@Context UriInfo uri){   
-        //        JSONObject jsonObject = new JSONObject();
-        //        
-        //        Collection<Link> links = storeManagement.collectLinks();
-        //        Iterator<Link> iterator = links.iterator();
-        //      //  Link Link ; 
-        //        while(iterator.hasNext()){
-        //            Link = iterator.next();
-        ////            try {
-        ////                jsonObject.put(Link.getLinkName(),uri.getAbsolutePath().toString().concat("/" + Link.getLinkName()));
-        ////            } catch (JSONException e) {
-        ////                // TODO Auto-generated catch block
-        ////                e.printStackTrace();
-        ////            }
-        //        }
-        //        return Response.status(Status.OK).entity(jsonObject.toString()).build();
-        return null; 
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("{id}")
+    public Response getLink(
+            @Context UriInfo uri,
+            @PathParam(value = "id") int id) throws JSONException {
+
+        JSONObject result = new JSONObject();
+
+        Link link = storeManagement.getLink(id);
+
+        if (link == null) {
+            return Response.ok(Status.NOT_FOUND).build();
+        }
+
+        result.put("id", link.getLinkId());
+        result.put("description", link.getDescription());
+        result.put("url", link.getUrl());
+
+        return Response.ok(Status.OK).entity(result.toString()).build();
     }
 
     /**

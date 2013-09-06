@@ -21,6 +21,7 @@ import com.peergreen.store.controller.IPetalController;
 import com.peergreen.store.controller.IStoreManagment;
 import com.peergreen.store.db.client.ejb.entity.Category;
 import com.peergreen.store.db.client.ejb.entity.Group;
+import com.peergreen.store.db.client.ejb.entity.Link;
 import com.peergreen.store.db.client.ejb.entity.Petal;
 import com.peergreen.store.db.client.ejb.entity.User;
 import com.peergreen.store.db.client.ejb.entity.Vendor;
@@ -175,7 +176,7 @@ public class GetOperations {
     public void setPetalController(IPetalController petalController) {
         this.petalController = petalController;
     }
-    
+
     /**
      * Retrieve all the petals from the local repository.
      *
@@ -218,7 +219,9 @@ public class GetOperations {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/petals/staging")
-    public Response getStagingPetals(@Context UriInfo uri) throws JSONException {
+    public Response getStagingPetals(@Context UriInfo uri)
+            throws JSONException {
+
         Collection<Petal> petals = storeManagement.collectPetalsFromStaging();
         Iterator<Petal> it = petals.iterator();
 
@@ -274,5 +277,35 @@ public class GetOperations {
 
         return Response.status(Status.OK).entity(res.toString()).build();
     }
-    
+
+    /**
+     * Retrieve all existing links in database.
+     *
+     * @return collection of all existing links in database
+     * @throws JSONException 
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/links")
+    public Response getLinks(@Context UriInfo uri) throws JSONException {   
+        Collection<Link> links = storeManagement.collectLinks();
+        Iterator<Link> iterator = links.iterator();
+
+        JSONObject result = new JSONObject();
+        
+        List<JSONObject> linksList = new ArrayList<>();
+        while(iterator.hasNext()){
+            Link l = iterator.next();
+            JSONObject obj = new JSONObject();
+            obj.put("id", l.getLinkId());
+            obj.put("href", uri.getBaseUri().toString()
+                    .concat("link/" + Integer.toString(l.getLinkId())));
+            
+            linksList.add(obj);
+        }
+        
+        result.put("links", linksList);
+        return Response.status(Status.OK).entity(result.toString()).build();
+    }
+
 }
